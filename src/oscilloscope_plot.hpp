@@ -134,7 +134,7 @@ namespace adiscope {
 		void computeMeasurementsForChannel(unsigned int chnIdx, unsigned int sampleRate);
 
 		void setConversionFunction(const std::function<double(unsigned int, double, bool)> &fp);
-
+		void enableXaxisLabels();
 	Q_SIGNALS:
 		void timeTriggerValueChanged(double);
 		void channelOffsetChanged(unsigned int, double);
@@ -164,6 +164,7 @@ namespace adiscope {
 		void setVertCursorsLocked(bool value);
 		void showEvent(QShowEvent *event);
 		void printWithNoBackground(const QString& toolName = "", bool editScaleDraw = true);
+		void onDigitalChannelAdded(int chnIdx);
 
 	protected:
 		virtual void cleanUpJustBeforeChannelRemoval(int chnIdx);
