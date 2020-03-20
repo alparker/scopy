@@ -135,6 +135,7 @@ namespace adiscope {
 
 		void setConversionFunction(const std::function<double(unsigned int, double, bool)> &fp);
 		void enableXaxisLabels();
+		void enableTimeTrigger(bool enable);
 	Q_SIGNALS:
 		void timeTriggerValueChanged(double);
 		void channelOffsetChanged(unsigned int, double);
