@@ -166,6 +166,8 @@ namespace adiscope {
 		void showEvent(QShowEvent *event);
 		void printWithNoBackground(const QString& toolName = "", bool editScaleDraw = true);
 		void onDigitalChannelAdded(int chnIdx);
+		void beginGroupSelection();
+		void endGroupSelection();    // TODO: toggle group selection
 
 	protected:
 		virtual void cleanUpJustBeforeChannelRemoval(int chnIdx);
@@ -205,6 +207,7 @@ namespace adiscope {
 		void onTriggerAHandleGrabbed(bool);
 		void onTriggerBHandleGrabbed(bool);
 
+		void handleInGroupChangedPosition(int position);
 	private:
 		std::function<double(unsigned int, double, bool)> m_conversion_function;
 		SymbolController *d_symbolCtrl;
@@ -234,6 +237,10 @@ namespace adiscope {
 
 		QList<HorizBar*> d_offsetBars;
 		QList<RoundedHandleV*> d_offsetHandles;
+
+		// Channel grouping
+		QVector<QList<RoundedHandleV*>> d_groupHandles;
+		bool d_startedGrouping;
 
 		PlotLineHandleV *d_vCursorHandle1;
 		PlotLineHandleV *d_vCursorHandle2;
