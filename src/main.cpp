@@ -28,6 +28,8 @@
 #include <QFontDatabase>
 #include <QTranslator>
 #include <QLocale>
+#include <QLibraryInfo>
+
 #include "config.h"
 #include "tool_launcher.hpp"
 #include "scopyApplication.hpp"
