@@ -25,6 +25,7 @@ using namespace adiscope::logic;
 
 constexpr int MAX_BUFFER_SIZE_ONESHOT = 4 * 1024 * 1024; // 4M
 constexpr int MAX_BUFFER_SIZE_STREAM = 64 * 4 * 1024 * 1024; // 64 x 4M
+constexpr int DIGITAL_NR_CHANNELS = 16;
 
 LogicAnalyzer::LogicAnalyzer(iio_context *ctx, adiscope::Filter *filt,
 			     adiscope::ToolMenuItem *toolMenuItem,
@@ -58,7 +59,7 @@ LogicAnalyzer::LogicAnalyzer(iio_context *ctx, adiscope::Filter *filt,
 	m_bufferSize(1000),
 	m_m2kContext(m2kOpen(ctx, "")),
 	m_m2kDigital(m_m2kContext->getDigital()),
-	m_nbChannels(m_m2kDigital->getNbChannelsIn()),
+	m_nbChannels(DIGITAL_NR_CHANNELS),
 	m_buffer(nullptr),
 	m_horizOffset(0.0),
 	m_timeTriggerOffset(0.0),
@@ -175,7 +176,7 @@ LogicAnalyzer::~LogicAnalyzer()
 
 	if (m_captureThread) {
 		m_stopRequested = true;
-		m_m2kDigital->cancelBufferIn();
+		m_m2kDigital->cancelAcquisition();
 		m_captureThread->join();
 		delete m_captureThread;
 		m_captureThread = nullptr;
@@ -914,7 +915,7 @@ void LogicAnalyzer::startStop(bool start)
 
 		m_stopRequested = false;
 
-		m_m2kDigital->flushBufferIn();
+		m_m2kDigital->stopAcquisition();
 
 
 		const double sampleRate = m_sampleRateButton->value();
@@ -974,18 +975,18 @@ void LogicAnalyzer::startStop(bool start)
 
 			m_buffer = new uint16_t[bufferSize];
 
-//			QMetaObject::invokeMethod(this, [=](){
-//				m_plot.setTriggerState(CapturePlot::Waiting);
-//			}, Qt::QueuedConnection);
+			QMetaObject::invokeMethod(this, [=](){
+				m_plot.setTriggerState(CapturePlot::Waiting);
+			}, Qt::QueuedConnection);
 
 			if (ui->btnStreamOneShot->isChecked()) {
 				try {
 					const uint16_t * const temp = m_m2kDigital->getSamplesP(bufferSize);
 					memcpy(m_buffer, temp, bufferSizeAdjusted * sizeof(uint16_t));
 
-//					QMetaObject::invokeMethod(this, [=](){
-//						m_plot.setTriggerState(CapturePlot::Triggered);
-//					}, Qt::QueuedConnection);
+					QMetaObject::invokeMethod(this, [=](){
+						m_plot.setTriggerState(CapturePlot::Triggered);
+					}, Qt::QueuedConnection);
 
 				} catch (std::invalid_argument &e) {
 					qDebug() << e.what();
@@ -1012,9 +1013,9 @@ void LogicAnalyzer::startStop(bool start)
 						absIndex += captureSize;
 						totalSamples -= captureSize;
 
-//						QMetaObject::invokeMethod(this, [=](){
-//							m_plot.setTriggerState(CapturePlot::Triggered);
-//						}, Qt::QueuedConnection);
+						QMetaObject::invokeMethod(this, [=](){
+							m_plot.setTriggerState(CapturePlot::Triggered);
+						}, Qt::QueuedConnection);
 
 					} catch (std::invalid_argument &e) {
 						qDebug() << e.what();
@@ -1051,25 +1052,28 @@ void LogicAnalyzer::startStop(bool start)
 			QMetaObject::invokeMethod(&m_plot,
 						  "replot");
 
-//			QMetaObject::invokeMethod(this, [=](){
-//				m_plot.setTriggerState(CapturePlot::Stop);
-//			}, Qt::QueuedConnection);
+			QMetaObject::invokeMethod(this, [=](){
+				m_plot.setTriggerState(CapturePlot::Stop);
+			}, Qt::QueuedConnection);
 
 		});
 
 	} else {
 		if (m_captureThread) {
 			m_stopRequested = true;
-			m_m2kDigital->cancelBufferIn();
+			try {
+				m_m2kDigital->cancelAcquisition(); // cancelBufferIn
+			} catch (...) {
+				qDebug() << "Error";
+			}
+
 			m_captureThread->join();
 			delete m_captureThread;
 			m_captureThread = nullptr;
 			restoreTriggerState();
 		}
 
-//		QMetaObject::invokeMethod(this, [=](){
-//			m_plot.setTriggerState(CapturePlot::Stop);
-//		}, Qt::QueuedConnection);
+		m_plot.setTriggerState(CapturePlot::Stop);
 
 	}
 

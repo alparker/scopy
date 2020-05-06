@@ -2238,8 +2238,6 @@ void CapturePlot::setTriggerState(int triggerState)
 {
 	d_triggerStateLabel->hide();
 
-	qDebug() << QThread::currentThread();
-
 	switch (triggerState) {
 	case Waiting:
 		d_triggerStateLabel->setText(tr("Waiting"));
