@@ -304,11 +304,13 @@ void LogicAnalyzer::onSampleRateValueChanged(double value)
 		m_plot.cancelZoom();
 		m_timePositionButton->setValue(m_timeTriggerOffset);
 		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0 + m_timeTriggerOffset);
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0 + m_timeTriggerOffset;
 		m_plot.replot();
 		m_plot.zoomBaseUpdate();
 	} else { // streaming
 		m_plot.cancelZoom();
 		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0);
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0;
 		m_plot.replot();
 		m_plot.zoomBaseUpdate();
 	}
@@ -336,11 +338,13 @@ void LogicAnalyzer::onBufferSizeChanged(double value)
 		m_plot.cancelZoom();
 		m_timePositionButton->setValue(m_timeTriggerOffset);
 		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0 + m_timeTriggerOffset);
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0 + m_timeTriggerOffset;
 		m_plot.replot();
 		m_plot.zoomBaseUpdate();
 	} else { // streaming
 		m_plot.cancelZoom();
 		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0);
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0;
 		m_plot.replot();
 		m_plot.zoomBaseUpdate();
 	}
@@ -372,12 +376,14 @@ void LogicAnalyzer::on_btnStreamOneShot_toggled(bool toggled)
 		m_plot.cancelZoom();
 		m_timePositionButton->setValue(m_timeTriggerOffset);
 		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0 - m_timeTriggerOffset);
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0 - m_timeTriggerOffset;
 		m_plot.replot();
 		m_plot.zoomBaseUpdate();
 	} else { // streaming
 		m_plot.cancelZoom();
 		m_plot.setHorizUnitsPerDiv(1.0 / m_sampleRate * m_bufferSize / 16.0);
 		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0);
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0;
 		m_plot.replot();
 		m_plot.zoomBaseUpdate();
 	}
@@ -832,8 +838,10 @@ void LogicAnalyzer::updateBufferPreviewer(int64_t min, int64_t max)
 	long long totalSamples = m_bufferSize;
 
 	if (totalSamples > 0) {
-		dataInterval.setMinValue(-((min / m_sampleRate) - (m_timePositionButton->value() * (1.0 / m_sampleRate))));
-		dataInterval.setMaxValue((max / m_sampleRate) + (m_timePositionButton->value() * (1.0 / m_sampleRate)));
+		const int offset = ui->btnStreamOneShot->isChecked() ? m_timePositionButton->value() * (1.0 / m_sampleRate)
+								     : 0;
+		dataInterval.setMinValue(-((min / m_sampleRate) + offset));
+		dataInterval.setMaxValue((max / m_sampleRate) - offset);
 	}
 
 	// Use the two intervals to determine the width and position of the
@@ -893,7 +901,8 @@ void LogicAnalyzer::initBufferScrolling()
 				      (ui->btnStreamOneShot ? 0 : m_timeTriggerOffset));
 		m_plot.replot();
 		updateBufferPreviewer(0, m_lastCapturedSample);
-		m_horizOffset = m_timeTriggerOffset;
+		m_horizOffset = 1.0 / m_sampleRate * m_bufferSize / 2.0 +
+				(ui->btnStreamOneShot ? 0 : m_timeTriggerOffset);
 	});
 }
 
@@ -988,12 +997,13 @@ void LogicAnalyzer::startStop(bool start)
 						m_plot.setTriggerState(CapturePlot::Triggered);
 					}, Qt::QueuedConnection);
 
+					m_lastCapturedSample = bufferSize;
+					Q_EMIT dataAvailable(0, bufferSize);
+					updateBufferPreviewer(0, m_lastCapturedSample);
+
 				} catch (std::invalid_argument &e) {
 					qDebug() << e.what();
 				}
-				m_lastCapturedSample = bufferSize;
-				Q_EMIT dataAvailable(0, bufferSize);
-				updateBufferPreviewer(0, m_lastCapturedSample);
 			} else {
 				uint64_t chunks = 4;
 				while ((bufferSizeAdjusted >> chunks) > (1 << 19)) {
@@ -1090,10 +1100,6 @@ static gint sort_pds(gconstpointer a, gconstpointer b)
 
 void LogicAnalyzer::setupDecoders()
 {
-//	if (srd_init(nullptr) != SRD_OK) {
-//		qDebug() << "Error: libsigrokdecode init failed!";
-//	}
-
 	if (srd_decoder_load_all() != SRD_OK) {
 		qDebug() << "Error: srd_decoder_load_all failed!";
 	}
