@@ -27,11 +27,11 @@ constexpr int MAX_BUFFER_SIZE_ONESHOT = 4 * 1024 * 1024; // 4M
 constexpr int MAX_BUFFER_SIZE_STREAM = 64 * 4 * 1024 * 1024; // 64 x 4M
 constexpr int DIGITAL_NR_CHANNELS = 16;
 
-LogicAnalyzer::LogicAnalyzer(iio_context *ctx, adiscope::Filter *filt,
+LogicAnalyzer::LogicAnalyzer(M2kDigital *m2kDigital, adiscope::Filter *filt,
 			     adiscope::ToolMenuItem *toolMenuItem,
 			     QJSEngine *engine, adiscope::ToolLauncher *parent,
 			     bool offline_mode_):
-	Tool(ctx, toolMenuItem, new LogicAnalyzer_API(this), "Logic Analyzer", parent),
+	Tool(nullptr, toolMenuItem, new LogicAnalyzer_API(this), "Logic Analyzer", parent),
 	ui(new Ui::LogicAnalyzer),
 	m_plot(this, 16, 10),
 	m_bufferPreviewer(new DigitalBufferPreviewer(40, this)),
@@ -57,8 +57,7 @@ LogicAnalyzer::LogicAnalyzer(iio_context *ctx, adiscope::Filter *filt,
 					 true, false, this)),
 	m_sampleRate(1000000),
 	m_bufferSize(1000),
-	m_m2kContext(m2kOpen(ctx, "")),
-	m_m2kDigital(m_m2kContext->getDigital()),
+	m_m2kDigital(m2kDigital),
 	m_nbChannels(DIGITAL_NR_CHANNELS),
 	m_buffer(nullptr),
 	m_horizOffset(0.0),
@@ -77,8 +76,6 @@ LogicAnalyzer::LogicAnalyzer(iio_context *ctx, adiscope::Filter *filt,
 	m_timer(new QTimer(this)),
 	m_timerTimeout(1000)
 {
-	qDebug() << m_m2kDigital << " " << m_m2kContext;
-
 	// setup ui
 	setupUi();
 
@@ -149,7 +146,9 @@ LogicAnalyzer::LogicAnalyzer(iio_context *ctx, adiscope::Filter *filt,
 	// default: stream
 	ui->btnStreamOneShot->setChecked(false);
 
-	// default: cursors
+	// default
+	m_sampleRateButton->setValue(m_sampleRate);
+	m_bufferSizeButton->setValue(m_bufferSize);
 
 	readPreferences();
 
