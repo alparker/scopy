@@ -54,7 +54,6 @@ class DIOManager : public QObject
 	int gpo;
 	int gpi;
 	bool outputEnabled;
-	static const char *channelNames[];
 	M2kDigital *digital;
 
 public:
@@ -75,7 +74,6 @@ public:
 	void setDirection(int ch, bool output);
 	bool getDirection(int ch);
 	void setDeviceDirection(int ch, bool force);
-//	iio_channel *getChannel(int ch);
 	void lock(int mask);
 	int getLockMask();
 	bool isLocked(int ch);

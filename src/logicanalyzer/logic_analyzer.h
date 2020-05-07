@@ -46,7 +46,7 @@ class LogicAnalyzer : public Tool {
 
 	friend class LogicAnalyzer_API;
 public:
-	explicit LogicAnalyzer(struct iio_context *ctx, Filter *filt,
+	explicit LogicAnalyzer(M2kDigital *m2kDigital, Filter *filt,
 			 ToolMenuItem *toolMenuItem, QJSEngine *engine,
 			 ToolLauncher *parent, bool offline_mode_ = 0);
 	~LogicAnalyzer();
@@ -56,6 +56,7 @@ public:
 
 Q_SIGNALS:
 	void dataAvailable(uint64_t, uint64_t);
+	void showTool();
 
 private Q_SLOTS:
 
@@ -120,7 +121,6 @@ private:
 	uint64_t m_bufferSize;
 	uint64_t m_lastCapturedSample;
 
-	M2k *m_m2kContext;
 	M2kDigital *m_m2kDigital;
 	int m_nbChannels;
 

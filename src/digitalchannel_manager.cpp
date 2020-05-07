@@ -37,7 +37,6 @@
 #include <QPushButton>
 #include <QFileDialog>
 
-///* pulseview and sigrok */
 #include <boost/math/common_factor.hpp>
 
 //#include "pattern_generator.hpp"
@@ -56,24 +55,9 @@ void DIOManager::init()
 
 }
 
-const char *DIOManager::channelNames[] = {
-	"voltage0", "voltage1", "voltage2", "voltage3",
-	"voltage4", "voltage5", "voltage6", "voltage7",
-	"voltage8", "voltage9", "voltage10", "voltage11",
-	"voltage12", "voltage13", "voltage14", "voltage15"
-};
-
 DIOManager::DIOManager(M2kDigital *digital, Filter *filt) : digital(digital)
 {
-//	dev = filt->find_device(digital,TOOL_DIGITALIO);
-//	nrOfChannels = iio_device_get_channels_count(dev);
 	outputEnabled = false;
-
-//	for (auto i=0; i<nrOfChannels; i++) {
-//		auto ch = getChannel(i);
-//		iio_channel_attr_write(ch, "direction", "in");
-//		iio_channel_attr_write(ch, "raw", "0");
-//	}
 
 	for (int i = 0; i < DIGITAL_NR_CHANNELS; ++i) {
 		digital->setDirection(i, DIO_DIRECTION::DIO_INPUT);
@@ -88,51 +72,14 @@ DIOManager::~DIOManager()
 
 }
 
-//iio_channel *DIOManager::getChannel(int ch)
-//{
-//	return iio_device_find_channel(dev,channelNames[ch],0);
-//}
-
-
 void DIOManager::setOutputMode(int chid, bool mode)
 {
-//	auto ch = getChannel(chid);
-//	char strMode[20];
-
-//	if (mode) {
-//		strcpy(strMode,"open-drain");
-//	} else {
-//		strcpy(strMode,"push-pull");
-//	}
-
-//	iio_channel_attr_write(ch, "outputmode", strMode);
-
 	digital->setOutputMode(chid, mode ? DIO_MODE::DIO_OPENDRAIN
 					  : DIO_MODE::DIO_PUSHPULL);
 }
 
 void DIOManager::setDeviceDirection(int chid, bool force)
 {
-
-//	auto ch = getChannel(chid);
-
-//	if (force) {
-//		qDebug()<<"direction out channel - "<<chid<<"\n";
-//		iio_channel_attr_write(ch, "direction", "out");
-//		return;
-//	}
-
-
-//	if (!isLocked(chid)) {
-//		if (outputEnabled && getDirection(chid)) {
-//			qDebug()<<"direction out channel" <<chid;
-//			iio_channel_attr_write(ch, "direction", "out");
-//		} else {
-//			qDebug()<<"direction in channel" <<chid;
-//			iio_channel_attr_write(ch, "direction", "in");
-//		}
-//	}
-
 	if (!isLocked(chid)) {
 		const bool output = (outputEnabled & getDirection(chid)) | force;
 		digital->setDirection(chid, output ? DIO_DIRECTION::DIO_OUTPUT
@@ -163,15 +110,6 @@ bool DIOManager::getOutRaw(int ch)
 
 void DIOManager::setDeviceOutRaw(int ch)
 {
-//	if (outputEnabled) {
-//		auto channel = getChannel(ch);
-
-//		if (getOutRaw(ch)) {
-//			iio_channel_attr_write(channel, "raw", "1");
-//		} else {
-//			iio_channel_attr_write(channel, "raw", "0");
-//		}
-//	}
 	if (outputEnabled) {
 		digital->setValueRaw(ch, getOutRaw(ch) ? DIO_LEVEL::HIGH
 						       : DIO_LEVEL::LOW);
@@ -191,16 +129,6 @@ int DIOManager::getGpi()
 
 bool DIOManager::getInRaw(int ch)
 {
-//	auto channel = getChannel(ch);
-//	char buf[10];
-//	iio_channel_attr_read(channel,"raw",buf,10);
-
-//	if (buf[0]=='1') {
-//		return 1;
-//	} else {
-//		return 0;
-//	}
-
 	return static_cast<bool>(digital->getValueRaw(ch));
 
 }
