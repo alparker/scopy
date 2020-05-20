@@ -1732,7 +1732,6 @@ QVector<int> CapturePlot::getGroupOfChannel(int chnIdx)
 
 	// if no group return
 	if (hdlGroup == d_groupHandles.end()) {
-		qDebug() << "This handle is not in a group!";
 		return groupIdxList;
 	}
 
@@ -1744,17 +1743,33 @@ QVector<int> CapturePlot::getGroupOfChannel(int chnIdx)
 
 }
 
+QVector<QVector<int> > CapturePlot::getAllGroups()
+{
+	QVector<QVector<int>> allGroups;
+	for (int i = 0; i < d_groupHandles.size(); ++i) {
+		QVector<int> group;
+		for (int j = 0; j < d_groupHandles[i].size(); ++j) {
+			int ch = d_offsetHandles.indexOf(d_groupHandles[i][j]);
+			if (ch != -1) {
+				group.append(ch);
+			}
+		}
+		if (!group.empty()) {
+			allGroups.append(group);
+		}
+	}
+
+	return allGroups;
+}
+
 void CapturePlot::removeFromGroup(int chnIdx, int removedChnIdx, bool &didGroupVanish)
 {
-	qDebug() << "delete: chIndx: " << chnIdx << " removedChnIdx: " << removedChnIdx;
-
 	auto hdlGroup = std::find_if(d_groupHandles.begin(), d_groupHandles.end(),
 				     [=](const QList<RoundedHandleV*> &group){
 		return group.contains(d_offsetHandles[chnIdx]);
 	});
 
 	if (hdlGroup == d_groupHandles.end()) {
-		qDebug() << "This handle is not in a group!";
 		return;
 	}
 
@@ -1796,7 +1811,6 @@ void CapturePlot::positionInGroupChanged(int chnIdx, int from, int to)
 	});
 
 	if (hdlGroup == d_groupHandles.end()) {
-		qDebug() << "This handle is not in a group!";
 		return;
 	}
 
@@ -1826,7 +1840,6 @@ void CapturePlot::handleInGroupChangedPosition(int position)
 
 	// if no group return
 	if (hdlGroup == d_groupHandles.end()) {
-		qDebug() << "This handle is not in a group!";
 		return;
 	}
 
@@ -1859,7 +1872,6 @@ void CapturePlot::handleInGroupChangedPosition(int position)
 			   this, &CapturePlot::handleInGroupChangedPosition);
 		hdlGroup->at(i)->setPosition(currentPos);
 		int temp = getTraceHeightInPixelsForHandle(hdlGroup->at(i), bonusHeight);
-		qDebug() << "handle: " << i << " gets bonus: " << bonusHeight;
 		if (bonusHeight != 0.0) {
 			hdlGroup->at(i)->setPosition(currentPos - bonusHeight);
 			currentPos -= bonusHeight;

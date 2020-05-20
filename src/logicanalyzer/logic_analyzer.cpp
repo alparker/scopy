@@ -31,7 +31,7 @@ LogicAnalyzer::LogicAnalyzer(M2kDigital *m2kDigital, adiscope::Filter *filt,
 			     adiscope::ToolMenuItem *toolMenuItem,
 			     QJSEngine *engine, adiscope::ToolLauncher *parent,
 			     bool offline_mode_):
-	Tool(nullptr, toolMenuItem, new LogicAnalyzer_API(this), "Logic Analyzer", parent),
+	LogicTool(nullptr, toolMenuItem, new LogicAnalyzer_API(this), "Logic Analyzer", parent),
 	ui(new Ui::LogicAnalyzer),
 	m_plot(this, 16, 10),
 	m_bufferPreviewer(new DigitalBufferPreviewer(40, this)),
@@ -59,7 +59,6 @@ LogicAnalyzer::LogicAnalyzer(M2kDigital *m2kDigital, adiscope::Filter *filt,
 	m_bufferSize(1000),
 	m_m2kDigital(m2kDigital),
 	m_nbChannels(DIGITAL_NR_CHANNELS),
-	m_buffer(nullptr),
 	m_horizOffset(0.0),
 	m_timeTriggerOffset(0.0),
 	m_resetHorizAxisOffset(true),
@@ -192,11 +191,6 @@ LogicAnalyzer::~LogicAnalyzer()
 
 	delete cr_ui;
 	delete ui;
-}
-
-uint16_t *LogicAnalyzer::getData()
-{
-	return m_buffer;
 }
 
 void LogicAnalyzer::on_btnChannelSettings_toggled(bool checked)

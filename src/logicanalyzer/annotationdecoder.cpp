@@ -46,7 +46,7 @@ void AnnotationDecoder::initDecoderChannels()
     }
 }
 
-AnnotationDecoder::AnnotationDecoder(AnnotationCurve *annotationCurve, std::shared_ptr<logic::Decoder> initialDecoder, logic::LogicAnalyzer *logic)
+AnnotationDecoder::AnnotationDecoder(AnnotationCurve *annotationCurve, std::shared_ptr<logic::Decoder> initialDecoder, logic::LogicTool *logic)
     : m_annotationCurve(annotationCurve)
     , m_decodeThread(nullptr)
     , m_srdSession(nullptr)
