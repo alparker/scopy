@@ -19,7 +19,7 @@
 
 namespace adiscope {
 namespace logic {
-class LogicAnalyzer;
+class LogicTool;
 class Decoder;
 }
 }
@@ -38,7 +38,7 @@ class AnnotationDecoder;
 class AnnotationCurve : public GenericLogicPlotCurve
 {
 public:
-	AnnotationCurve(logic::LogicAnalyzer *logic, std::shared_ptr<logic::Decoder> initialDecoder);
+	AnnotationCurve(logic::LogicTool *logic, std::shared_ptr<logic::Decoder> initialDecoder);
 	~AnnotationCurve();
 
 public:

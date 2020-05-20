@@ -4,7 +4,7 @@
 
 #include "binding/decoder.hpp"
 
-#include "logic_analyzer.h"
+#include "logic_tool.h"
 
 #include <qwt_plot.h>
 #include <qwt_painter.h>
@@ -19,10 +19,12 @@
 
 #include <QElapsedTimer>
 
+#include <QApplication>
+
 using namespace adiscope;
 using namespace adiscope::logic;
 
-AnnotationCurve::AnnotationCurve(logic::LogicAnalyzer *logic, std::shared_ptr<logic::Decoder> initialDecoder)
+AnnotationCurve::AnnotationCurve(logic::LogicTool *logic, std::shared_ptr<logic::Decoder> initialDecoder)
 	: GenericLogicPlotCurve(initialDecoder->decoder()->name, LogicPlotCurveType::Annotations)
 	, m_visibleRows(0)
 {
@@ -239,7 +241,9 @@ void AnnotationCurve::drawLines(QPainter *painter, const QwtScaleMap &xMap, cons
     QStringList titles;
 
 	painter->save();
-	painter->setFont(QFont("Times", 10));
+	const QString fontFamily = QApplication::font().family();
+	painter->setFont(QFont(fontFamily, 10));
+
 
     int currentRowOnPlot = 0;
     for (int row = 0; row < m_annotationRows.size(); ++row) {

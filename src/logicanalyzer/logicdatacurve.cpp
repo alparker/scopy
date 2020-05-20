@@ -13,7 +13,7 @@ static const QColor HighColor(0x00, 0xC0, 0x00);
 static const QColor LowColor(0xC0, 0x00, 0x00);
 static const QColor SamplingPointColor(0x77, 0x77, 0x77);
 
-LogicDataCurve::LogicDataCurve(uint16_t *data, uint8_t bit, adiscope::logic::LogicAnalyzer *logic) :
+LogicDataCurve::LogicDataCurve(uint16_t *data, uint8_t bit, adiscope::logic::LogicTool *logic) :
     GenericLogicPlotCurve(QString("Dio " + QString::number(bit))),
     m_logic(logic),
     m_startSample(0),
@@ -118,6 +118,8 @@ void LogicDataCurve::drawLines(QPainter *painter, const QwtScaleMap &xMap,
     std::vector<std::pair<uint64_t, bool>> edges;
     getSubsampledEdges(edges, xMap);
 
+    qDebug() << "edges size: " << edges.size() << " m_edges size: " << m_edges.size();
+
 //    qDebug() << "Subsampled edges: " << edges.size();
 
     if (!edges.size()) {
@@ -219,7 +221,7 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
 //    qDebug() << "last edge: " << lastEdge;
 
     if (m_edges.size() == 0) {
-//	    qDebug() << "first edge: " << firstEdge << " last edge: " << lastEdge;
+	    qDebug() << "first edge: " << firstEdge << " last edge: " << lastEdge;
     }
 
     if (firstEdge > 0) {
@@ -227,13 +229,18 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
     }
 
     if (lastEdge < m_edges.size() - 1) {
-//	    qDebug() << "lastEdge: " << lastEdge << " < " << "m_edges.size() - 1: " << m_edges.size() - 1;
+	    qDebug() << "lastEdge: " << lastEdge << " < " << "m_edges.size() - 1: " << m_edges.size() - 1;
         lastEdge++;
     }
 
     // If plot is zoomed in / not so many edges close together
     // draw them all
     if (dist > 0.10) {
+
+	if (lastEdge == m_edges.size() - 1) {
+	    lastEdge = m_edges.size();
+	}
+
         for (; firstEdge < lastEdge; ++firstEdge) {
             edges.emplace_back(m_edges[firstEdge]);
         }
@@ -242,8 +249,9 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
         const uint64_t pointsPerPixel = 1.0 / dist;
 
         // Save last transition (high, low)
+	bool reachedEnd = false;
         bool lastTransition = m_edges[firstEdge].second;
-        for (; firstEdge < lastEdge; ) {
+	for (; firstEdge < lastEdge && !reachedEnd; ) {
             const int64_t lastSample = m_edges[firstEdge].first;
             edges.emplace_back(m_edges[firstEdge]);
 
@@ -257,6 +265,7 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
 
 		if (next == m_edges.end()) {
 			next = m_edges.end() - 1;
+			reachedEnd = true;
 		}
 
 		auto previous = next;
@@ -282,6 +291,10 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
             firstEdge = std::distance(m_edges.begin(), next);
 
             lastTransition = (*next).second;
+
+	    if (reachedEnd) {
+		edges.emplace_back(m_edges[firstEdge]);
+	    }
         }
     }
 }

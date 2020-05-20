@@ -79,7 +79,7 @@ ToolLauncher::ToolLauncher(QString prevCrashDump, QWidget *parent) :
 	ui(new Ui::ToolLauncher), ctx(nullptr),
 	power_control(nullptr), dmm(nullptr), signal_generator(nullptr),
 	oscilloscope(nullptr), current(nullptr), filter(nullptr),
-	logic_analyzer(nullptr), /*pattern_generator(nullptr),*/ dio(nullptr),
+	logic_analyzer(nullptr), pattern_generator(nullptr), dio(nullptr),
 	network_analyzer(nullptr), spectrum_analyzer(nullptr), debugger(nullptr),
 	manual_calibration(nullptr), tl_api(new ToolLauncher_API(this)),
 	dioManager(nullptr),
@@ -265,7 +265,7 @@ void ToolLauncher::_toolSelected(enum tool tool)
 		selectedTool = logic_analyzer;
 		break;
 	case TOOL_PATTERN_GENERATOR:
-//		selectedTool = pattern_generator;
+		selectedTool = pattern_generator;
 		break;
 	case TOOL_DIGITALIO:
 		selectedTool = dio;
@@ -925,7 +925,7 @@ void ToolLauncher::btnLogicAnalyzer_clicked()
 
 void adiscope::ToolLauncher::btnPatternGenerator_clicked()
 {
-//	swapMenu(static_cast<QWidget *>(pattern_generator));
+	swapMenu(static_cast<QWidget *>(pattern_generator));
 }
 
 void adiscope::ToolLauncher::btnNetworkAnalyzer_clicked()
@@ -1140,10 +1140,10 @@ void adiscope::ToolLauncher::destroyContext()
 		logic_analyzer = nullptr;
 	}
 
-//	if (pattern_generator) {
-//		delete pattern_generator;
-//		pattern_generator = nullptr;
-//	}
+	if (pattern_generator) {
+		delete pattern_generator;
+		pattern_generator = nullptr;
+	}
 
 	if (network_analyzer) {
 		delete network_analyzer;
@@ -1488,15 +1488,14 @@ bool adiscope::ToolLauncher::switchContext(const QString& uri)
 		});
 	}
 
-
-//	if (filter->compatible((TOOL_PATTERN_GENERATOR))) {
-//		pattern_generator = new PatternGenerator(ctx, filter,
-//				 menu->getToolMenuItemFor(TOOL_PATTERN_GENERATOR), &js_engine,dioManager, this);
-//		toolList.push_back(pattern_generator);
-//		connect(pattern_generator, &PatternGenerator::showTool, [=]() {
-//			 menu->getToolMenuItemFor(TOOL_PATTERN_GENERATOR)->getToolBtn()->click();
-//		});
-//	}
+	if (filter->compatible((TOOL_PATTERN_GENERATOR))) {
+		pattern_generator = new logic::PatternGenerator(m2k->getDigital(), filter,
+				 menu->getToolMenuItemFor(TOOL_PATTERN_GENERATOR), &js_engine, dioManager, this);
+		toolList.push_back(pattern_generator);
+		connect(pattern_generator, &logic::PatternGenerator::showTool, [=]() {
+			 menu->getToolMenuItemFor(TOOL_PATTERN_GENERATOR)->getToolBtn()->click();
+		});
+	}
 
 	connect(menu->getToolMenuItemFor(TOOL_NETWORK_ANALYZER)->getToolStopBtn(),
 			&QPushButton::toggled,
@@ -1507,6 +1506,7 @@ bool adiscope::ToolLauncher::switchContext(const QString& uri)
 			menu->getToolMenuItemFor(TOOL_SIGNAL_GENERATOR)->getToolStopBtn()->setChecked(false);
 		}
 	});
+
 	connect(menu->getToolMenuItemFor(TOOL_SIGNAL_GENERATOR)->getToolStopBtn(),
 			&QPushButton::toggled,
 			[=](bool en) {
