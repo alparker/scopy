@@ -10,12 +10,14 @@ apt-get install -y jq
 
 REPO_LOCAL=/home/docker/scopy-flatpak
 cd "$REPO_LOCAL"
-git pull && git checkout master
+git pull && git checkout cleanup
 
 # check the number of elements in the json file in order to get the last element, which is Scopy
 cnt=$( echo `jq '.modules | length' org.adi.Scopy.json` )
 cnt=$(($cnt-1))
 
+# use jq to replace the Scopy branch + the repo url used for building
+# we want to build the branch and repo we're currently on
 if [ -n "$BRANCH" ]; then
 	REPO_URL=https://github.com/"$REPO"
 	# We are building in Appveyor and we have access to the current branch on a CACHED Docker image
@@ -40,5 +42,5 @@ rm tmp.json
 make clean
 make -j4
 
-# Copy the Scopy.flatpak file in $GITHUB_WORKSPACE (which is the external location, mount when docker starts)
+# Copy the Scopy.flatpak file in /scopy (which is the external location, mount when docker starts)
 cp Scopy.flatpak $ARTIFACT_LOCATION/
