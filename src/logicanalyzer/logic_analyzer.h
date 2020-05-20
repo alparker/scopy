@@ -10,7 +10,7 @@
 #include <QScrollBar>
 #include <QTimer>
 
-#include "tool.hpp"
+#include "logic_tool.h"
 #include "oscilloscope_plot.hpp"
 #include "buffer_previewer.hpp"
 #include "spinbox_a.hpp"
@@ -41,7 +41,7 @@ class LogicAnalyzer_API;
 
 namespace logic {
 
-class LogicAnalyzer : public Tool {
+class LogicAnalyzer : public LogicTool {
 	Q_OBJECT
 
 	friend class LogicAnalyzer_API;
@@ -51,11 +51,7 @@ public:
 			 ToolLauncher *parent, bool offline_mode_ = 0);
 	~LogicAnalyzer();
 
-public:
-	uint16_t * getData();
-
 Q_SIGNALS:
-	void dataAvailable(uint64_t, uint64_t);
 	void showTool();
 
 private Q_SLOTS:
@@ -124,7 +120,6 @@ private:
 	M2kDigital *m_m2kDigital;
 	int m_nbChannels;
 
-	uint16_t *m_buffer;
 	QVector<GenericLogicPlotCurve *> m_plotCurves;
 
 	double m_horizOffset;

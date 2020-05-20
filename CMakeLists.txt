@@ -198,22 +198,13 @@ link_directories(
 	)
 
 FILE(GLOB SRC_LIST  src/*.cpp src/*.cc
-	src/pulseview/pv/*.cpp
-	src/pulseview/pv/binding/*.cpp
-	src/pulseview/pv/data/*.cpp
-	src/pulseview/pv/data/decode/*.cpp
-	src/pulseview/pv/devices/*.cpp
-	src/pulseview/pv/dialogs/*.cpp
-	src/pulseview/pv/popups/*.cpp
-	src/pulseview/pv/prop/*.cpp
-	src/pulseview/pv/toolbars/*.cpp
-	src/pulseview/pv/view/*.cpp
-	src/pulseview/pv/widgets/*.cpp
+	src/patterngenerator/*.cpp
+	src/patterngenerator/*/*.cpp
 	src/logicanalyzer/*.cpp
 	src/logicanalyzer/*/*.cpp
 )
 
-FILE(GLOB M2KSCOPE_UIS ui/patterns/*.ui ui/*.ui src/pulseview/pv/dialogs/*.ui)
+FILE(GLOB M2KSCOPE_UIS ui/patterns/*.ui ui/*.ui)
 qt5_wrap_ui (m2kscope_FORMS_HEADERS ${M2KSCOPE_UIS})
 
 FILE(GLOB M2KSCOPE_RESOURCES resources/*.qrc)

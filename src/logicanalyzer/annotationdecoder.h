@@ -21,7 +21,7 @@ class AnnotationDecoder
 {
 public:
     AnnotationDecoder(AnnotationCurve *annotationCurve, std::shared_ptr<logic::Decoder> initialDecoder,
-	logic::LogicAnalyzer *logic);
+	logic::LogicTool *logic);
     ~AnnotationDecoder();
 
     void stackDecoder(std::shared_ptr<logic::Decoder> decoder);
@@ -48,7 +48,7 @@ private:
 
 private:
     AnnotationCurve *m_annotationCurve;
-	logic::LogicAnalyzer *m_logic;
+	logic::LogicTool *m_logic;
 
     uint64_t m_lastSample;
 
