@@ -223,6 +223,11 @@ int AnnotationCurve::getVisibleRows() const
 	return m_visibleRows;
 }
 
+AnnotationDecoder *AnnotationCurve::getAnnotationDecoder()
+{
+	return m_annotationDecoder;
+}
+
 void AnnotationCurve::drawLines(QPainter *painter, const QwtScaleMap &xMap, const QwtScaleMap &yMap, const QRectF &canvasRect, int from, int to) const
 {
 //    qDebug() << "Draw called for annotation curve";

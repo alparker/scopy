@@ -8,6 +8,7 @@
 
 #include "../logicanalyzer/logicdatacurve.h"
 #include "patterns/patterns.hpp"
+#include "../logicanalyzer/annotationcurve.h"
 
 using namespace adiscope;
 using namespace adiscope::logic;
@@ -310,9 +311,32 @@ void PatternGenerator::patternSelected(const QString &pattern)
 		m_ui->patternLayout->addWidget(patternUi);
 		patternUi->setVisible(true);
 
+		if (patternUi->getDecoder()) {
+			qDebug() << "This pattern has a decoder!";
+
+			AnnotationCurve *curve = new AnnotationCurve(this, patternUi->getDecoder());
+			curve->setTraceHeight(25);
+			m_plot.addDigitalPlotCurve(curve, true);
+
+			patternUi->setAnnotationCurve(curve);
+
+			// use direct connection we want the processing
+			// of the available data to be done in the capture thread
+			auto connectionHandle = connect(this, &PatternGenerator::dataAvailable,
+				this, [=](uint64_t from, uint64_t to){
+				curve->dataAvailable(from, to);
+			}, Qt::DirectConnection);
+
+			m_plotCurves.push_back(curve);
+
+			m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
+//			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
+		}
+
 		connect(patternUi, &PatternUI::patternParamsChanged,
 			this, &PatternGenerator::regenerate);
-
+		connect(patternUi, &PatternUI::patternParamsChanged,
+			this, &PatternGenerator::generateBuffer);
 
 		bool didSet = false;
 		for (auto &ep : m_enabledPatterns) {
@@ -321,6 +345,13 @@ void PatternGenerator::patternSelected(const QString &pattern)
 				ep.second->deleteLater();
 				ep.second = patternUi;
 				didSet = true;
+
+				// TODO: remove annotation curve if it has one!!!
+
+				patternUi->build_ui(m_ui->patternWidget, 0);
+				patternUi->get_pattern()->init();
+				patternUi->post_load_ui();
+
 				break;
 			}
 		}
@@ -348,13 +379,17 @@ void PatternGenerator::patternSelected(const QString &pattern)
 			}
 		}
 		if (remove != -1) {
+
+			// TODO: remove annotation curve if it has one!!!
+
 			m_ui->patternLayout->removeWidget(m_enabledPatterns[remove].second);
 			m_enabledPatterns[remove].second->deleteLater();
 			m_enabledPatterns.removeAt(remove);
 		}
 	}
 
-	regenerate();
+	generateBuffer();
+	regenerate(); // will start/stop if running!
 }
 
 void PatternGenerator::on_btnOutputMode_toggled(bool checked)
@@ -504,47 +539,7 @@ void PatternGenerator::startStop(bool start)
 
 		const bool isSingle = m_ui->runSingleWidget->singleButtonChecked();
 
-		// Compute samplerate
-		const uint64_t sr = computeSampleRate();
-
-		qDebug() << "Sample rate is: " << sr;
-		m_sampleRate = sr;
-
-		const uint64_t bufferSize = computeBufferSize(sr);
-
-		qDebug() << "Buffer size is: " << bufferSize;
-		m_bufferSize = bufferSize;
-
-		if (m_buffer) {
-			delete[] m_buffer;
-		}
-
-		m_buffer = new uint16_t[bufferSize];
-		memset(m_buffer, 0x0000, bufferSize * sizeof(uint16_t));
-
-		for (int i = 0; i < m_plotCurves.size(); ++i) {
-			QwtPlotCurve *curve = m_plot.getDigitalPlotCurve(i);
-			GenericLogicPlotCurve *logic_curve = dynamic_cast<GenericLogicPlotCurve *>(curve);
-			logic_curve->reset();
-
-			logic_curve->setSampleRate(sr);
-			logic_curve->setBufferSize(bufferSize);
-			logic_curve->setTimeTriggerOffset(0);
-		}
-
-		m_plot.setHorizUnitsPerDiv(1.0 / m_sampleRate * m_bufferSize / 16.0);
-		m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0);
-		m_plot.cancelZoom();
-		m_plot.zoomBaseUpdate();
-		m_plot.replot();
-
-		for (QPair<QVector<int>, PatternUI *> &pattern : m_enabledPatterns) {
-			pattern.second->get_pattern()->generate_pattern(sr, bufferSize, pattern.first.size());
-			commitBuffer(pattern, m_buffer, bufferSize);
-			pattern.second->get_pattern()->delete_buffer();
-		}
-
-		Q_EMIT dataAvailable(0, bufferSize);
+		generateBuffer();
 
 		m_plot.replot();
 
@@ -563,9 +558,9 @@ void PatternGenerator::startStop(bool start)
 		m_diom->lock(lockMask);
 		try {
 
-			m_m2kDigital->setSampleRateOut(sr);
+			m_m2kDigital->setSampleRateOut(m_sampleRate);
 			m_m2kDigital->setCyclic(!isSingle);
-			m_m2kDigital->push(m_buffer, bufferSize);
+			m_m2kDigital->push(m_buffer, m_bufferSize);
 
 			if (isSingle) {
 				QSignalBlocker blocker(m_ui->runSingleWidget);
@@ -573,8 +568,8 @@ void PatternGenerator::startStop(bool start)
 				runButton()->setChecked(false);
 				m_ui->runSingleWidget->toggle(false);
 				start = false;
-				const double timeout = 500.0 + static_cast<double>(bufferSize) /
-						static_cast<double>(sr) * 500.0;
+				const double timeout = 500.0 + static_cast<double>(m_bufferSize) /
+						static_cast<double>(m_sampleRate) * 500.0;
 				m_singleTimer->singleShot(timeout, [=]() {
 					try {
 						m_diom->unlock();
@@ -614,6 +609,51 @@ void PatternGenerator::startStop(bool start)
 	}
 
 	m_isRunning = start;
+}
+
+void PatternGenerator::generateBuffer()
+{
+	// Compute samplerate
+	const uint64_t sr = computeSampleRate();
+
+	qDebug() << "Sample rate is: " << sr;
+	m_sampleRate = sr;
+
+	const uint64_t bufferSize = computeBufferSize(sr);
+
+	qDebug() << "Buffer size is: " << bufferSize;
+	m_bufferSize = bufferSize;
+
+	if (m_buffer) {
+		delete[] m_buffer;
+	}
+
+	m_buffer = new uint16_t[bufferSize];
+	memset(m_buffer, 0x0000, bufferSize * sizeof(uint16_t));
+
+	for (int i = 0; i < m_plotCurves.size(); ++i) {
+		QwtPlotCurve *curve = m_plot.getDigitalPlotCurve(i);
+		GenericLogicPlotCurve *logic_curve = dynamic_cast<GenericLogicPlotCurve *>(curve);
+		logic_curve->reset();
+
+		logic_curve->setSampleRate(sr);
+		logic_curve->setBufferSize(bufferSize);
+		logic_curve->setTimeTriggerOffset(0);
+	}
+
+	m_plot.setHorizUnitsPerDiv(1.0 / m_sampleRate * m_bufferSize / 16.0);
+	m_plot.setHorizOffset(1.0 / m_sampleRate * m_bufferSize / 2.0);
+	m_plot.cancelZoom();
+	m_plot.zoomBaseUpdate();
+	m_plot.replot();
+
+	for (QPair<QVector<int>, PatternUI *> &pattern : m_enabledPatterns) {
+		pattern.second->get_pattern()->generate_pattern(sr, bufferSize, pattern.first.size());
+		commitBuffer(pattern, m_buffer, bufferSize);
+		pattern.second->get_pattern()->delete_buffer();
+	}
+
+	Q_EMIT dataAvailable(0, bufferSize);
 }
 
 void PatternGenerator::triggerRightMenuToggle(CustomPushButton *btn, bool checked)
@@ -734,7 +774,15 @@ void PatternGenerator::connectSignalsAndSlots()
 void PatternGenerator::updateChannelGroupWidget(bool visible)
 {
 	QVector<int> channelsInGroup = m_plot.getGroupOfChannel(m_selectedChannel);
-	const bool shouldBeVisible = visible & (channelsInGroup.size() > 0);
+
+	int channelsInGroupSize = channelsInGroup.size();
+	for (int i = 0; i < channelsInGroup.size(); ++i) {
+		if (channelsInGroup[i] >= DIGITAL_NR_CHANNELS) {
+			channelsInGroupSize--;
+		}
+	}
+
+	const bool shouldBeVisible = visible & (channelsInGroupSize > 1);
 	m_ui->groupWidget->setVisible(shouldBeVisible);
 
 	if (!shouldBeVisible) {
@@ -762,6 +810,10 @@ void PatternGenerator::updateChannelGroupWidget(bool visible)
 	});
 
 	for (int i = 0; i < channelsInGroup.size(); ++i) {
+		if (channelsInGroup[i] >= DIGITAL_NR_CHANNELS) {
+			continue;
+		}
+
 		QString name = m_plotCurves[channelsInGroup[i]]->getName();
 		LogicGroupItem *item = new LogicGroupItem(name, m_currentGroupMenu);
 		connect(m_plotCurves[channelsInGroup[i]], &GenericLogicPlotCurve::nameChanged,
@@ -847,6 +899,7 @@ void PatternGenerator::updateGroupsAndPatterns()
 		}
 	}
 
+	generateBuffer();
 	regenerate();
 
 //	qDebug() << "#### Update groups and patterns ####";
@@ -863,6 +916,7 @@ void PatternGenerator::channelInGroupChangedPosition(int from, int to)
 		}
 	}
 
+	generateBuffer();
 	regenerate();
 
 //	qDebug() << "#### channel in group changed position ####";
@@ -878,6 +932,7 @@ void PatternGenerator::channelInGroupRemoved(int position)
 		}
 	}
 
+	generateBuffer();
 	regenerate();
 
 //	qDebug() << "#### channel in group removed ####";

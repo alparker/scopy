@@ -74,12 +74,12 @@ AnnotationDecoder::~AnnotationDecoder()
 	    m_decodeCanceled = true;
 	    srd_session_terminate_reset(m_srdSession);
 	    {
-            std::unique_lock<std::mutex> lock(m_newDataMutex);
-            m_newDataCv.notify_one();
+	    std::unique_lock<std::mutex> lock(m_newDataMutex);
+	    m_newDataCv.notify_one();
 	    }
 
-        srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
-                                 g_variant_new_uint64(m_annotationCurve->getSampleRate()));
+	srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
+				 g_variant_new_uint64(m_annotationCurve->getSampleRate()));
 	    for (const std::shared_ptr<logic::Decoder> &dec : m_stack) {
 		dec->apply_all_options();
 	    }

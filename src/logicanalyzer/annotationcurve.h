@@ -61,6 +61,8 @@ public:
 
 	int getVisibleRows() const;
 
+	AnnotationDecoder *getAnnotationDecoder();
+
 protected:
     void drawLines( QPainter *painter,
         const QwtScaleMap &xMap, const QwtScaleMap &yMap,

@@ -1469,6 +1469,24 @@ void CapturePlot::removeDigitalPlotCurve(QwtPlotCurve *curve)
 	replot();
 }
 
+void CapturePlot::setOffsetHandleVisible(int chIdx, bool visible)
+{
+	d_offsetHandles.at(chIdx)->setVisible(visible);
+}
+
+void CapturePlot::addToGroup(int currentGroup, int toAdd)
+{
+	beginGroupSelection();
+	if (!d_offsetHandles.at(currentGroup)->isSelected()) {
+		d_offsetHandles.at(currentGroup)->selected(true);
+	}
+	d_offsetHandles.at(toAdd)->selected(true);
+	endGroupSelection();
+
+	d_offsetHandles.at(currentGroup)->setSelected(true);
+	d_offsetHandles.at(currentGroup)->selected(true);
+}
+
 void CapturePlot::onDigitalChannelAdded(int chnIdx)
 {
 	qDebug() << "Digital Channel Added!";

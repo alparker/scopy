@@ -139,7 +139,6 @@ void Decoder::setter(const char *id, Glib::VariantBase value)
 	decoder_->set_option(id, value.gobj());
 
     assert(m_annDecoder);
-//	decode_signal_->begin_decode();
     m_annDecoder->startDecode();
 }
 

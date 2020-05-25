@@ -185,9 +185,9 @@ LogicAnalyzer::~LogicAnalyzer()
 		m_buffer = nullptr;
 	}
 
-	if (srd_exit() != SRD_OK) {
-	    qDebug() << "Error: srd_exit failed in ~LogicAnalyzer()";
-	}
+//	if (srd_exit() != SRD_OK) {
+//	    qDebug() << "Error: srd_exit failed in ~LogicAnalyzer()";
+//	}
 
 	delete cr_ui;
 	delete ui;
