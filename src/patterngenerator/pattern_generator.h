@@ -47,6 +47,7 @@ Q_SIGNALS:
 
 private Q_SLOTS:
 	void startStop(bool start);
+	void generateBuffer();
 
 	void on_btnChannelSettings_toggled(bool);
 	void on_btnSettings_clicked(bool checked);

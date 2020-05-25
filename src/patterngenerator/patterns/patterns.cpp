@@ -1701,6 +1701,8 @@ uint8_t I2CPattern::generate_pattern(uint32_t sample_rate,
 
 I2CPatternUI::I2CPatternUI(I2CPattern *pattern,
 			   QWidget *parent) : PatternUI(parent), pattern(pattern), parent_(parent)
+      , m_annotationCurve(nullptr)
+      , m_decoder(nullptr)
 {
 	qDebug()<<"UARTPatternUI created";
 	ui = new Ui::I2CPatternUI();
@@ -1712,6 +1714,21 @@ I2CPatternUI::I2CPatternUI(I2CPattern *pattern,
 	}, tr("Frequency"), 1e0, PG_MAX_SAMPLERATE/2,true,false,this, {1,2.5,5});
 	ui->verticalLayout->insertWidget(0,frequencySpinButton);
 	setVisible(false);
+
+	GSList *decoderList = g_slist_copy((GSList *)srd_decoder_list());
+	for (const GSList *sl = decoderList; sl; sl = sl->next) {
+	    srd_decoder *dec = (struct srd_decoder *)sl->data;
+	    if (QString::fromUtf8(dec->id) == "i2c") {
+		m_decoder = std::make_shared<logic::Decoder>(dec);
+	    }
+	}
+
+	g_slist_free(decoderList);
+
+	connect(this, &I2CPatternUI::patternParamsChanged, [=](){
+//		m_decoder->set_option();
+		qDebug() << "Update decoder params!";
+	});
 }
 
 I2CPatternUI::~I2CPatternUI()
@@ -1749,14 +1766,32 @@ void I2CPatternUI::build_ui(QWidget *parent,uint16_t number_of_channels)
 	connect(ui->LE_IFS,SIGNAL(textChanged(QString)),this,SLOT(parse_ui()));
 	connect(ui->LE_address,SIGNAL(textChanged(QString)),this,SLOT(parse_ui()));
 	connect(ui->LE_toSend,SIGNAL(textChanged(QString)),this,SLOT(parse_ui()));
+
+
 	parse_ui();
 
 
 }
+
 void I2CPatternUI::destroy_ui()
 {
 	parent_->layout()->removeWidget(this);
 	//    delete ui;
+}
+
+GenericLogicPlotCurve *I2CPatternUI::getAnnotationCurve()
+{
+	return m_annotationCurve;
+}
+
+std::shared_ptr<logic::Decoder> I2CPatternUI::getDecoder()
+{
+	return m_decoder;
+}
+
+void I2CPatternUI::setAnnotationCurve(GenericLogicPlotCurve *curve)
+{
+	m_annotationCurve = curve;
 }
 
 Pattern *I2CPatternUI::get_pattern()

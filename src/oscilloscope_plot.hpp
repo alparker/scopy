@@ -174,6 +174,8 @@ namespace adiscope {
 		void printWithNoBackground(const QString& toolName = "", bool editScaleDraw = true);
 		void onDigitalChannelAdded(int chnIdx);
 		void removeDigitalPlotCurve(QwtPlotCurve *curve);
+		void setOffsetHandleVisible(int chIdx, bool visible);
+		void addToGroup(int currentGroup, int toAdd);
 		void beginGroupSelection();
 		bool endGroupSelection();    // TODO: toggle group selection
 		QVector<int> getGroupOfChannel(int chnIdx);

@@ -478,12 +478,20 @@ class I2CPatternUI : public PatternUI
 	QWidget *parent_;
 	I2CPattern *pattern;
 	ScaleSpinButton *frequencySpinButton;
+	GenericLogicPlotCurve *m_annotationCurve;
+	std::shared_ptr<logic::Decoder> m_decoder;
 public:
 	I2CPatternUI(I2CPattern *pattern, QWidget *parent = 0);
 	~I2CPatternUI();
 	Pattern *get_pattern();
 	void build_ui(QWidget *parent = 0,uint16_t number_of_channels=0);
 	void destroy_ui();
+
+public: // Decoder related
+	virtual GenericLogicPlotCurve *getAnnotationCurve() override;
+	virtual std::shared_ptr<logic::Decoder> getDecoder() override;
+	virtual void setAnnotationCurve(GenericLogicPlotCurve *curve) override;
+
 private Q_SLOTS:
 	void parse_ui();
 };
