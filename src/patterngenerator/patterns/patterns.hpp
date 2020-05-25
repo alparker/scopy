@@ -50,6 +50,9 @@
 #include "ui_i2cpatternui.h"
 #include "filemanager.h"
 
+#include "../../logicanalyzer/genericlogicplotcurve.h"
+#include "../../logicanalyzer/decoder.h"
+
 
 namespace Ui {
 class BinaryCounterPatternUI;
@@ -181,6 +184,12 @@ public:
 	virtual void post_load_ui();
 	virtual void parse_ui();
 	virtual void destroy_ui();
+
+public: // Decoder related
+	virtual GenericLogicPlotCurve *getAnnotationCurve() { return nullptr; }
+	virtual std::shared_ptr<logic::Decoder> getDecoder() { return nullptr; }
+	virtual void setAnnotationCurve(GenericLogicPlotCurve *curve) {}
+
 Q_SIGNALS:
 	void patternParamsChanged();
 	void decoderChanged();
