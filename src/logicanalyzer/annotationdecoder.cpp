@@ -308,6 +308,11 @@ void AnnotationDecoder::assignChannel(uint16_t chId, uint16_t bitId)
     startDecode();
 }
 
+int AnnotationDecoder::getNrOfChannels() const
+{
+	return m_channels.size();
+}
+
 void AnnotationDecoder::stackChanged()
 {
     stopDecode();

@@ -81,6 +81,7 @@ private:
 			  uint32_t bufferSize);
 	void checkEnabledChannels();
 	void removeAnnotationCurveOfPattern(PatternUI *pattern);
+	void updateAnnotationCurveChannelsForPattern(const QPair<QVector<int>, PatternUI *> &pattern);
 
 private:
 	Ui::PatternGenerator *m_ui;

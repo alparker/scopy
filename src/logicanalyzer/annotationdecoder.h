@@ -40,6 +40,7 @@ public:
 
     void reset();
 
+    int getNrOfChannels() const;
 private:
     void stackChanged();
 
