@@ -9,6 +9,7 @@
 #include "../logicanalyzer/logicdatacurve.h"
 #include "patterns/patterns.hpp"
 #include "../logicanalyzer/annotationcurve.h"
+#include "../logicanalyzer/annotationdecoder.h"
 
 using namespace adiscope;
 using namespace adiscope::logic;
@@ -295,7 +296,7 @@ void PatternGenerator::on_btnGroupChannels_toggled(bool checked)
 	if (checked) {
 		m_plot.beginGroupSelection();
 	} else {
-		if (m_plot.endGroupSelection()) {
+		if (m_plot.endGroupSelection(true)) {
 			channelSelectedChanged(m_selectedChannel, false);
 			updateGroupsAndPatterns();
 		}
@@ -322,6 +323,18 @@ void PatternGenerator::removeAnnotationCurveOfPattern(PatternUI *pattern)
 		delete curve;
 
 		m_annotationCurvePatternUiMap.remove(pattern);
+	}
+}
+
+void PatternGenerator::updateAnnotationCurveChannelsForPattern(const QPair<QVector<int>, PatternUI *> &pattern)
+{
+	if (pattern.second->getAnnotationCurve()) {
+		AnnotationCurve *curve = dynamic_cast<AnnotationCurve *>(
+					pattern.second->getAnnotationCurve());
+		for (int i = 0; i < curve->getAnnotationDecoder()->getNrOfChannels(); ++i) {
+			if (i >= pattern.first.size()) { break; }
+			curve->getAnnotationDecoder()->assignChannel(i, pattern.first[i]);
+		}
 	}
 }
 
@@ -682,6 +695,7 @@ void PatternGenerator::generateBuffer()
 		pattern.second->get_pattern()->generate_pattern(sr, bufferSize, pattern.first.size());
 		commitBuffer(pattern, m_buffer, bufferSize);
 		pattern.second->get_pattern()->delete_buffer();
+		updateAnnotationCurveChannelsForPattern(pattern);
 	}
 
 	Q_EMIT dataAvailable(0, bufferSize);

@@ -175,7 +175,7 @@ namespace adiscope {
 		void setOffsetHandleVisible(int chIdx, bool visible);
 		void addToGroup(int currentGroup, int toAdd);
 		void beginGroupSelection();
-		bool endGroupSelection();    // TODO: toggle group selection
+		bool endGroupSelection(bool moveAnnotationCurvesLast = false);    // TODO: toggle group selection
 		QVector<int> getGroupOfChannel(int chnIdx);
 		QVector<QVector<int>> getAllGroups();
 		void removeFromGroup(int chnIdx, int removedChnIdx, bool &didGroupVanish);

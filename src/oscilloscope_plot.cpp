@@ -1481,7 +1481,7 @@ void CapturePlot::addToGroup(int currentGroup, int toAdd)
 		d_offsetHandles.at(currentGroup)->selected(true);
 	}
 	d_offsetHandles.at(toAdd)->selected(true);
-	endGroupSelection();
+	endGroupSelection(true);
 
 	d_offsetHandles.at(currentGroup)->setSelected(true);
 	d_offsetHandles.at(currentGroup)->selected(true);
@@ -1609,7 +1609,7 @@ void CapturePlot::beginGroupSelection()
 	}
 }
 
-bool CapturePlot::endGroupSelection()
+bool CapturePlot::endGroupSelection(bool moveAnnotationCurvesLast)
 {
 	if (!d_startedGrouping) {
 		qDebug() << "\"endGroupSelection\" call not paired with \"beginGroupSelection\"!";
@@ -1655,6 +1655,13 @@ bool CapturePlot::endGroupSelection()
 		d_groupHandles.removeOne(*hdlGroup);
 	}
 	group = updatedGroup;
+	//
+	if (moveAnnotationCurvesLast) {
+		std::sort(group.begin(), group.end(), [=](RoundedHandleV *a, RoundedHandleV *b){
+			return d_offsetHandles.indexOf(a) < d_offsetHandles.indexOf(b);
+		});
+	}
+
 	d_groupHandles.push_back(group);
 
 	auto getTraceHeightInPixelsForHandle = [=](RoundedHandleV *handle, double &bonusHeight) {
