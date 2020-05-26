@@ -16,6 +16,7 @@
 #include <QScrollBar>
 #include <QQueue>
 #include <QTimer>
+#include <QMap>
 
 using namespace libm2k;
 using namespace libm2k::digital;
@@ -79,6 +80,7 @@ private:
 			  uint16_t *buffer,
 			  uint32_t bufferSize);
 	void checkEnabledChannels();
+	void removeAnnotationCurveOfPattern(PatternUI *pattern);
 
 private:
 	Ui::PatternGenerator *m_ui;
@@ -109,6 +111,8 @@ private:
 	bool m_isRunning;
 
 	QTimer *m_singleTimer;
+
+	QMap<PatternUI*, QPair<GenericLogicPlotCurve*, QMetaObject::Connection>> m_annotationCurvePatternUiMap;
 };
 
 } // namespace logic
