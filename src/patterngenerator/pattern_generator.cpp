@@ -302,6 +302,29 @@ void PatternGenerator::on_btnGroupChannels_toggled(bool checked)
 	}
 }
 
+void PatternGenerator::removeAnnotationCurveOfPattern(PatternUI *pattern)
+{
+	if (m_annotationCurvePatternUiMap.contains(pattern)) {
+		disconnect(m_annotationCurvePatternUiMap[pattern].second);
+
+		GenericLogicPlotCurve *curve = m_annotationCurvePatternUiMap[pattern].first;
+
+		bool dummy = false;
+		int removeIndx = m_plotCurves.indexOf(curve);
+		m_plot.removeFromGroup(m_selectedChannel,
+				       m_plot.getGroupOfChannel(m_selectedChannel).indexOf(removeIndx),
+				       dummy);
+
+		m_plot.removeDigitalPlotCurve(curve);
+
+		m_plotCurves.removeOne(curve);
+
+		delete curve;
+
+		m_annotationCurvePatternUiMap.remove(pattern);
+	}
+}
+
 void PatternGenerator::patternSelected(const QString &pattern)
 {
 	if (pattern != "-") {
@@ -322,7 +345,7 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 			// use direct connection we want the processing
 			// of the available data to be done in the capture thread
-			auto connectionHandle = connect(this, &PatternGenerator::dataAvailable,
+			QMetaObject::Connection connectionHandle = connect(this, &PatternGenerator::dataAvailable,
 				this, [=](uint64_t from, uint64_t to){
 				curve->dataAvailable(from, to);
 			}, Qt::DirectConnection);
@@ -331,6 +354,8 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 			m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
 //			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
+			m_annotationCurvePatternUiMap[patternUi] = { curve, connectionHandle };
+
 		}
 
 		connect(patternUi, &PatternUI::patternParamsChanged,
@@ -342,6 +367,9 @@ void PatternGenerator::patternSelected(const QString &pattern)
 		for (auto &ep : m_enabledPatterns) {
 			if (ep.first.contains(m_selectedChannel)) {
 				m_ui->patternLayout->removeWidget(ep.second);
+
+				removeAnnotationCurveOfPattern(ep.second);
+
 				ep.second->deleteLater();
 				ep.second = patternUi;
 				didSet = true;
@@ -383,6 +411,9 @@ void PatternGenerator::patternSelected(const QString &pattern)
 			// TODO: remove annotation curve if it has one!!!
 
 			m_ui->patternLayout->removeWidget(m_enabledPatterns[remove].second);
+
+			removeAnnotationCurveOfPattern(m_enabledPatterns[remove].second);
+
 			m_enabledPatterns[remove].second->deleteLater();
 			m_enabledPatterns.removeAt(remove);
 		}
