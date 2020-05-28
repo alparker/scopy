@@ -331,9 +331,16 @@ void PatternGenerator::updateAnnotationCurveChannelsForPattern(const QPair<QVect
 	if (pattern.second->getAnnotationCurve()) {
 		AnnotationCurve *curve = dynamic_cast<AnnotationCurve *>(
 					pattern.second->getAnnotationCurve());
+		QVector<int> chToAssign = pattern.second->getChannelsToAssign();
+		int skipped = 0;
 		for (int i = 0; i < curve->getAnnotationDecoder()->getNrOfChannels(); ++i) {
-			if (i >= pattern.first.size()) { break; }
-			curve->getAnnotationDecoder()->assignChannel(i, pattern.first[i]);
+			if (!chToAssign.empty() && !chToAssign.contains(i)) {
+				skipped++;
+				continue;
+			}
+			if (i - skipped >= pattern.first.size()) { break; }
+			if (pattern.first[i - skipped] >= DIGITAL_NR_CHANNELS) { continue; }
+			curve->getAnnotationDecoder()->assignChannel(i, pattern.first[i - skipped]);
 		}
 	}
 }
@@ -347,30 +354,6 @@ void PatternGenerator::patternSelected(const QString &pattern)
 		m_ui->patternLayout->addWidget(patternUi);
 		patternUi->setVisible(true);
 
-		if (patternUi->getDecoder()) {
-			qDebug() << "This pattern has a decoder!";
-
-			AnnotationCurve *curve = new AnnotationCurve(this, patternUi->getDecoder());
-			curve->setTraceHeight(25);
-			m_plot.addDigitalPlotCurve(curve, true);
-
-			patternUi->setAnnotationCurve(curve);
-
-			// use direct connection we want the processing
-			// of the available data to be done in the capture thread
-			QMetaObject::Connection connectionHandle = connect(this, &PatternGenerator::dataAvailable,
-				this, [=](uint64_t from, uint64_t to){
-				curve->dataAvailable(from, to);
-			}, Qt::DirectConnection);
-
-			m_plotCurves.push_back(curve);
-
-			m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
-//			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
-			m_annotationCurvePatternUiMap[patternUi] = { curve, connectionHandle };
-
-		}
-
 		connect(patternUi, &PatternUI::patternParamsChanged,
 			this, &PatternGenerator::regenerate);
 		connect(patternUi, &PatternUI::patternParamsChanged,
@@ -382,6 +365,30 @@ void PatternGenerator::patternSelected(const QString &pattern)
 				m_ui->patternLayout->removeWidget(ep.second);
 
 				removeAnnotationCurveOfPattern(ep.second);
+
+				if (patternUi->getDecoder()) {
+					qDebug() << "This pattern has a decoder!";
+
+					AnnotationCurve *curve = new AnnotationCurve(this, patternUi->getDecoder());
+					curve->setTraceHeight(25);
+					m_plot.addDigitalPlotCurve(curve, true);
+
+					patternUi->setAnnotationCurve(curve);
+
+					// use direct connection we want the processing
+					// of the available data to be done in the capture thread
+					QMetaObject::Connection connectionHandle = connect(this, &PatternGenerator::dataAvailable,
+						this, [=](uint64_t from, uint64_t to){
+						curve->dataAvailable(from, to);
+					}, Qt::DirectConnection);
+
+					m_plotCurves.push_back(curve);
+
+					m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
+		//			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
+					m_annotationCurvePatternUiMap[patternUi] = { curve, connectionHandle };
+
+				}
 
 				ep.second->deleteLater();
 				ep.second = patternUi;
@@ -405,6 +412,30 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 			} else {
 				m_enabledPatterns.push_back({group, patternUi});
+			}
+
+			if (patternUi->getDecoder()) {
+				qDebug() << "This pattern has a decoder!";
+
+				AnnotationCurve *curve = new AnnotationCurve(this, patternUi->getDecoder());
+				curve->setTraceHeight(25);
+				m_plot.addDigitalPlotCurve(curve, true);
+
+				patternUi->setAnnotationCurve(curve);
+
+				// use direct connection we want the processing
+				// of the available data to be done in the capture thread
+				QMetaObject::Connection connectionHandle = connect(this, &PatternGenerator::dataAvailable,
+					this, [=](uint64_t from, uint64_t to){
+					curve->dataAvailable(from, to);
+				}, Qt::DirectConnection);
+
+				m_plotCurves.push_back(curve);
+
+				m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
+	//			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
+				m_annotationCurvePatternUiMap[patternUi] = { curve, connectionHandle };
+
 			}
 
 			patternUi->build_ui(m_ui->patternWidget, 0);

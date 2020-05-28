@@ -189,6 +189,8 @@ public: // Decoder related
 	virtual GenericLogicPlotCurve *getAnnotationCurve() { return nullptr; }
 	virtual std::shared_ptr<logic::Decoder> getDecoder() { return nullptr; }
 	virtual void setAnnotationCurve(GenericLogicPlotCurve *curve) {}
+	virtual QVector<int> getChannelsToAssign() { return {}; }
+
 
 Q_SIGNALS:
 	void patternParamsChanged();
@@ -315,12 +317,20 @@ class BinaryCounterPatternUI : public PatternUI
 	QWidget *parent_;
 	BinaryCounterPattern *pattern;
 	ScaleSpinButton *frequencySpinButton;
+	GenericLogicPlotCurve *m_annotationCurve;
+	std::shared_ptr<logic::Decoder> m_decoder;
+
 public:
 	BinaryCounterPatternUI(BinaryCounterPattern *pattern, QWidget *parent = 0);
 	~BinaryCounterPatternUI();
 	Pattern *get_pattern();
 	void build_ui(QWidget *parent = 0,uint16_t number_of_channels=0);
 	void destroy_ui();
+
+public: // Decoder related
+	virtual GenericLogicPlotCurve *getAnnotationCurve() override;
+	virtual std::shared_ptr<logic::Decoder> getDecoder() override;
+	virtual void setAnnotationCurve(GenericLogicPlotCurve *curve) override;
 
 private Q_SLOTS:
 	void parse_ui();
@@ -412,12 +422,21 @@ class UARTPatternUI : public PatternUI
 	Ui::UARTPatternUI *ui;
 	QWidget *parent_;
 	UARTPattern *pattern;
+	GenericLogicPlotCurve *m_annotationCurve;
+	std::shared_ptr<logic::Decoder> m_decoder;
+
 public:
 	UARTPatternUI(UARTPattern *pattern, QWidget *parent = 0);
 	~UARTPatternUI();
 	Pattern *get_pattern();
 	void build_ui(QWidget *parent = 0,uint16_t number_of_channels=0);
 	void destroy_ui();
+
+public: // Decoder related
+	virtual GenericLogicPlotCurve *getAnnotationCurve() override;
+	virtual std::shared_ptr<logic::Decoder> getDecoder() override;
+	virtual void setAnnotationCurve(GenericLogicPlotCurve *curve) override;
+
 private Q_SLOTS:
 	void parse_ui();
 };
@@ -543,12 +562,21 @@ class SPIPatternUI : public PatternUI
 	QWidget *parent_;
 	SPIPattern *pattern;
 	ScaleSpinButton *frequencySpinButton;
+	GenericLogicPlotCurve *m_annotationCurve;
+	std::shared_ptr<logic::Decoder> m_decoder;
 public:
 	SPIPatternUI(SPIPattern *pattern, QWidget *parent = 0);
 	~SPIPatternUI();
 	Pattern *get_pattern();
 	void build_ui(QWidget *parent = 0,uint16_t number_of_channels=0);
 	void destroy_ui();
+
+public: // Decoder related
+	virtual GenericLogicPlotCurve *getAnnotationCurve() override;
+	virtual std::shared_ptr<logic::Decoder> getDecoder() override;
+	virtual void setAnnotationCurve(GenericLogicPlotCurve *curve) override;
+	virtual QVector<int> getChannelsToAssign() override;
+
 private Q_SLOTS:
 	void parse_ui();
 };

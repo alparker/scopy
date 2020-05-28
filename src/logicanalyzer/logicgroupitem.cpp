@@ -89,8 +89,10 @@ void LogicGroupItem::buildUi()
 
 	m_nameLabel->setMinimumHeight(16);
 
-	layout->insertWidget(0, m_nameLabel);
-	layout->insertWidget(1, deleteBtn);
+	m_nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+	layout->insertWidget(1, m_nameLabel);
+	layout->insertWidget(0, deleteBtn);
 	layout->insertSpacerItem(2, spacer);
 	layout->insertWidget(3, dragWidget);
 

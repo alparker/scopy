@@ -32,6 +32,8 @@
 #include "boost/math/common_factor.hpp"
 #include "patterns.hpp"
 #include "../pattern_generator.h"
+#include "../../logicanalyzer/annotationcurve.h"
+#include "../../logicanalyzer/annotationdecoder.h"
 
 #include <math.h>
 
@@ -989,6 +991,21 @@ BinaryCounterPatternUI::BinaryCounterPatternUI(BinaryCounterPattern *pattern,
 		{"MHz", 1E+6}
 	}, tr("Frequency"), 1e0, PG_MAX_SAMPLERATE/2,true,false,this, {1,2.5,5});
 	ui->verticalLayout->addWidget(frequencySpinButton);
+
+	GSList *decoderList = g_slist_copy((GSList *)srd_decoder_list());
+	for (const GSList *sl = decoderList; sl; sl = sl->next) {
+	    srd_decoder *dec = (struct srd_decoder *)sl->data;
+	    if (QString::fromUtf8(dec->id) == "parallel") {
+		m_decoder = std::make_shared<logic::Decoder>(dec);
+	    }
+	}
+
+	g_slist_free(decoderList);
+
+	connect(this, &BinaryCounterPatternUI::patternParamsChanged, [=](){
+//		m_decoder->set_option();
+		qDebug() << "Update decoder params parallel!";
+	});
 }
 
 BinaryCounterPatternUI::~BinaryCounterPatternUI()
@@ -1012,6 +1029,20 @@ void BinaryCounterPatternUI::destroy_ui()
 	parent_->layout()->removeWidget(this);
 }
 
+GenericLogicPlotCurve *BinaryCounterPatternUI::getAnnotationCurve()
+{
+	return m_annotationCurve;
+}
+
+std::shared_ptr<logic::Decoder> BinaryCounterPatternUI::getDecoder()
+{
+	return m_decoder;
+}
+
+void BinaryCounterPatternUI::setAnnotationCurve(GenericLogicPlotCurve *curve)
+{
+	m_annotationCurve = curve;
+}
 
 Pattern *BinaryCounterPatternUI::get_pattern()
 {
@@ -1422,6 +1453,61 @@ UARTPatternUI::UARTPatternUI(UARTPattern *pattern,
 	ui = new Ui::UARTPatternUI();
 	ui->setupUi(this);
 	setVisible(false);
+
+	GSList *decoderList = g_slist_copy((GSList *)srd_decoder_list());
+	for (const GSList *sl = decoderList; sl; sl = sl->next) {
+	    srd_decoder *dec = (struct srd_decoder *)sl->data;
+	    if (QString::fromUtf8(dec->id) == "uart") {
+		m_decoder = std::make_shared<logic::Decoder>(dec);
+	    }
+	}
+
+	g_slist_free(decoderList);
+
+	connect(this, &UARTPatternUI::patternParamsChanged, [=](){
+//		m_decoder->set_option();
+		qDebug() << "Update decoder params uart!";
+
+		m_decoder->set_option("baudrate",
+				      g_variant_new_int64(pattern->get_baud_rate()));
+		m_decoder->set_option("data_bits",
+				      g_variant_new_int64(8));
+
+		auto par = pattern->get_parity();
+
+		GVariant *parityStr = g_variant_new_string("none");
+
+		switch (par) {
+
+		case UARTPattern::SP_PARITY_ODD:
+			parityStr = g_variant_new_string("odd");
+			break;
+
+		case UARTPattern::SP_PARITY_EVEN:
+			parityStr = g_variant_new_string("even");
+			break;
+
+		case UARTPattern::SP_PARITY_MARK:
+			parityStr = g_variant_new_string("mark");
+			break;
+
+		case UARTPattern::SP_PARITY_SPACE:
+			parityStr = g_variant_new_string("space");
+			break;
+
+		case UARTPattern::SP_PARITY_NONE:
+		default:
+			parityStr = g_variant_new_string("none");
+			break;
+
+		}
+
+		m_decoder->set_option("parity", parityStr);
+		m_decoder->set_option("stop_bits",
+				      g_variant_new_double(pattern->get_stop_bits()));
+
+		dynamic_cast<AnnotationCurve*>(m_annotationCurve)->getAnnotationDecoder()->startDecode();
+	});
 }
 
 UARTPatternUI::~UARTPatternUI()
@@ -1450,6 +1536,21 @@ void UARTPatternUI::destroy_ui()
 {
 	parent_->layout()->removeWidget(this);
 	//    delete ui;
+}
+
+GenericLogicPlotCurve *UARTPatternUI::getAnnotationCurve()
+{
+	return m_annotationCurve;
+}
+
+std::shared_ptr<logic::Decoder> UARTPatternUI::getDecoder()
+{
+	return m_decoder;
+}
+
+void UARTPatternUI::setAnnotationCurve(GenericLogicPlotCurve *curve)
+{
+	m_annotationCurve = curve;
 }
 
 Pattern *UARTPatternUI::get_pattern()
@@ -2076,6 +2177,42 @@ SPIPatternUI::SPIPatternUI(SPIPattern *pattern,
 	}, tr("Frequency"), 1e0, PG_MAX_SAMPLERATE/2,true,false,this, {1,2.5,5});
 	ui->verticalLayout->insertWidget(0,frequencySpinButton);
 	setVisible(false);
+
+	GSList *decoderList = g_slist_copy((GSList *)srd_decoder_list());
+	for (const GSList *sl = decoderList; sl; sl = sl->next) {
+	    srd_decoder *dec = (struct srd_decoder *)sl->data;
+	    if (QString::fromUtf8(dec->id) == "spi") {
+		m_decoder = std::make_shared<logic::Decoder>(dec);
+	    }
+	}
+
+	g_slist_free(decoderList);
+
+
+	connect(this, &SPIPatternUI::patternParamsChanged, [=](){
+//		m_decoder->set_option();
+		qDebug() << "Spi decoder params!";
+
+		GVariant *cspolstr, *bitorderstr;
+
+		if (pattern->getCSPol()) {
+			cspolstr = g_variant_new_string("active-high");
+		} else {
+			cspolstr = g_variant_new_string("active-low");
+		}
+
+		if (pattern->getMsbFirst()) {
+			bitorderstr = g_variant_new_string("msb-first");
+		} else {
+			bitorderstr = g_variant_new_string("lsb-first");
+		}
+
+		m_decoder->set_option("cs_polarity", cspolstr);
+		m_decoder->set_option("bitorder", bitorderstr);
+		m_decoder->set_option("cpol", g_variant_new_int64(pattern->getCPOL()));
+		m_decoder->set_option("cpha", g_variant_new_int64(pattern->getCPHA()));
+	});
+
 }
 
 SPIPatternUI::~SPIPatternUI()
@@ -2125,6 +2262,27 @@ void SPIPatternUI::destroy_ui()
 {
 	parent_->layout()->removeWidget(this);
 	//    delete ui;
+}
+
+GenericLogicPlotCurve *SPIPatternUI::getAnnotationCurve()
+{
+	return m_annotationCurve;
+}
+
+std::shared_ptr<logic::Decoder> SPIPatternUI::getDecoder()
+{
+	return m_decoder;
+}
+
+void SPIPatternUI::setAnnotationCurve(GenericLogicPlotCurve *curve)
+{
+	m_annotationCurve = curve;
+}
+
+QVector<int> SPIPatternUI::getChannelsToAssign()
+{
+	// For the SPI decoder we only want to assign channels
+	return {0, 2, 3};
 }
 
 Pattern *SPIPatternUI::get_pattern()

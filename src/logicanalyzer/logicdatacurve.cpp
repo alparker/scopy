@@ -118,12 +118,12 @@ void LogicDataCurve::drawLines(QPainter *painter, const QwtScaleMap &xMap,
     std::vector<std::pair<uint64_t, bool>> edges;
     getSubsampledEdges(edges, xMap);
 
-    qDebug() << "edges size: " << edges.size() << " m_edges size: " << m_edges.size();
+//    qDebug() << "edges size: " << edges.size() << " m_edges size: " << m_edges.size();
 
 //    qDebug() << "Subsampled edges: " << edges.size();
 
     if (!edges.size()) {
-	    qDebug() << "NO EDGE FOR CURVE: " << getName();
+//	    qDebug() << "NO EDGE FOR CURVE: " << getName();
         return;
     }
 
@@ -221,7 +221,7 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
 //    qDebug() << "last edge: " << lastEdge;
 
     if (m_edges.size() == 0) {
-	    qDebug() << "first edge: " << firstEdge << " last edge: " << lastEdge;
+//	    qDebug() << "first edge: " << firstEdge << " last edge: " << lastEdge;
     }
 
     if (firstEdge > 0) {
@@ -229,7 +229,7 @@ void LogicDataCurve::getSubsampledEdges(std::vector<std::pair<uint64_t, bool>> &
     }
 
     if (lastEdge < m_edges.size() - 1) {
-	    qDebug() << "lastEdge: " << lastEdge << " < " << "m_edges.size() - 1: " << m_edges.size() - 1;
+//	    qDebug() << "lastEdge: " << lastEdge << " < " << "m_edges.size() - 1: " << m_edges.size() - 1;
         lastEdge++;
     }
 
@@ -312,7 +312,7 @@ uint64_t LogicDataCurve::edgeAtX(int x, const std::vector<std::pair<uint64_t, bo
         mid = start + (end - start) / 2;
 
 	if (mid >= m_edges.size()) {
-		qDebug() << "mid: " << mid << " m_edges.size():" << m_edges.size();
+//		qDebug() << "mid: " << mid << " m_edges.size():" << m_edges.size();
 	}
 
         if (edges[mid].first < x) {

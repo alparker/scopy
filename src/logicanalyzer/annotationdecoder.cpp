@@ -99,7 +99,7 @@ void AnnotationDecoder::stackDecoder(std::shared_ptr<logic::Decoder> decoder)
 
         srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
                                  g_variant_new_uint64(m_annotationCurve->getSampleRate()));
-        qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
+//        qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
         for (const std::shared_ptr<logic::Decoder> &dec : m_stack) {
             dec->apply_all_options();
         }
@@ -114,7 +114,7 @@ void AnnotationDecoder::stackDecoder(std::shared_ptr<logic::Decoder> decoder)
 
 void AnnotationDecoder::startDecode()
 {
-    qDebug() << "Start decode!";
+//    qDebug() << "Start decode!";
     // TODO: cancel mechanism
 
     if (m_srdSession) {
@@ -127,7 +127,7 @@ void AnnotationDecoder::startDecode()
 
         srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
                                  g_variant_new_uint64(m_annotationCurve->getSampleRate()));
-                qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
+//                qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
         for (const std::shared_ptr<logic::Decoder> &dec : m_stack) {
             dec->apply_all_options();
         }
@@ -159,9 +159,9 @@ void AnnotationDecoder::startDecode()
 
 
     if (srd_session_start(m_srdSession) != SRD_OK) {
-        qDebug() << "srd_session_start returned error!";
+	qDebug() << "srd_session_start returned error!";
     } else {
-        qDebug() << "srd_session_start returned SRD_OK";
+//        qDebug() << "srd_session_start returned SRD_OK";
     }
 
     if (m_decodeThread) {
@@ -173,12 +173,12 @@ void AnnotationDecoder::startDecode()
     m_decodeThread = new std::thread(&AnnotationDecoder::decodeProc, this);
 
     m_newDataCv.notify_one();
-    qDebug() << "finished start decode";
+//    qDebug() << "finished start decode";
 }
 
 void AnnotationDecoder::stopDecode()
 {
-    qDebug() << "stop decoder!";
+//    qDebug() << "stop decoder!";
     m_decodeCanceled = true;
     {
         std::unique_lock<std::mutex> lock(m_newDataMutex);
@@ -200,7 +200,7 @@ void AnnotationDecoder::stopDecode()
         dec->invalidate_decoder_inst();
     }
 
-    qDebug() << "finished stop decoder";
+//    qDebug() << "finished stop decoder";
 }
 
 void AnnotationDecoder::dataAvailable(uint64_t from, uint64_t to)
@@ -237,7 +237,7 @@ void AnnotationDecoder::unassignChannel(uint16_t chId)
 
         srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
                                  g_variant_new_uint64(m_annotationCurve->getSampleRate()));
-                qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
+//                qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
         for (const std::shared_ptr<logic::Decoder> &dec : m_stack) {
             dec->apply_all_options();
         }
@@ -284,7 +284,7 @@ void AnnotationDecoder::assignChannel(uint16_t chId, uint16_t bitId)
 
         srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
                                  g_variant_new_uint64(m_annotationCurve->getSampleRate()));
-                qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
+//                qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
         for (const std::shared_ptr<logic::Decoder> &dec : m_stack) {
             dec->apply_all_options();
         }
@@ -301,7 +301,7 @@ void AnnotationDecoder::assignChannel(uint16_t chId, uint16_t bitId)
     }
 
     for (auto &ch : m_channels) {
-        qDebug() << "ch: " << ch.id << " has ch assigned: " << ch.assigned_signal << " with bitid: " << ch.bit_id;
+	qDebug() << "ch: " << ch.id << " has ch assigned: " << ch.assigned_signal << " with bitid: " << ch.bit_id;
     }
 
     stackChanged();
@@ -320,7 +320,7 @@ void AnnotationDecoder::stackChanged()
     if (srd_session_new(&m_srdSession) != SRD_OK) {
         qDebug() << "srd_session_new returned error!";
     } else {
-        qDebug() << "srd_session_new returned SRD_OK";
+//        qDebug() << "srd_session_new returned SRD_OK";
     }
 
     vector<DecodeChannel *> chls;
@@ -408,13 +408,13 @@ void AnnotationDecoder::decodeProc()
 //        }
 
         if (m_decodeCanceled) {
-            qDebug() << "cancel requested!";
+//            qDebug() << "cancel requested!";
             break;
         }
 
         for (const shared_ptr<logic::Decoder> & dec : m_stack) {
             if (!dec->have_required_channels()) {
-                qDebug() << "not having required channels!";
+//                qDebug() << "not having required channels!";
                 // TODO: SET ERROR MESSAGE
                 return;
             }
@@ -422,7 +422,7 @@ void AnnotationDecoder::decodeProc()
 
         // TODO: CHECK FOR ERRORS
 
-        qDebug() << "exit wait!";
+//        qDebug() << "exit wait!";
 
         uint64_t start, stop;
         std::tie(start, stop) = m_newDataQueue.front();
@@ -435,11 +435,11 @@ void AnnotationDecoder::decodeProc()
         uint16_t *data = m_logic->getData();
         memcpy(chunk.get(), data + start, chunkSize * sizeof(uint16_t));
 
-        qDebug() << "send data!";
+//        qDebug() << "send data!";
 
         if (srd_session_send(m_srdSession, start, stop, reinterpret_cast<uint8_t*>(
                                  chunk.get()), chunkSize, sizeof(uint16_t)) != SRD_OK) {
-            qDebug() << "No bueno!";
+//            qDebug() << "No bueno!";
         }
 
         // Notify curve that annotations are now available to be drawn on the plot
