@@ -31,12 +31,15 @@ class Filter;
 class BaseMenu;
 class DIOManager;
 class PatternUI;
+class PatternGenerator_API;
 
 namespace logic {
 
 class PatternGenerator : public LogicTool
 {
 	Q_OBJECT
+
+	friend class PatternGenerator_API;
 public:
 	explicit PatternGenerator(M2kDigital *m2kDigital, Filter *filt,
 				  ToolMenuItem *toolMenuItem, QJSEngine *engine,
