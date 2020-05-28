@@ -87,9 +87,33 @@ LogicAnalyzer::LogicAnalyzer(M2kDigital *m2kDigital, adiscope::Filter *filt,
 
 	for (uint8_t i = 0; i < m_nbChannels; ++i) {
 		QCheckBox *channelBox = new QCheckBox("DIO " + QString::number(i));
-		ui->channelEnumeratorLayout->addWidget(channelBox, i % 8, i / 8);
+
+		QHBoxLayout *hBoxLayout = new QHBoxLayout(this);
+
+		ui->channelEnumeratorLayout->addLayout(hBoxLayout, i % 8, i / 8);
+
+		hBoxLayout->addWidget(channelBox);
+
+		QComboBox *triggerBox = new QComboBox();
+		triggerBox->addItem("-");
+
+		hBoxLayout->addWidget(triggerBox);
 
 		channelBox->setChecked(true);
+
+		for (int i = 1; i < ui->triggerComboBox->count(); ++i) {
+			triggerBox->addItem(ui->triggerComboBox->itemIcon(i),
+					    ui->triggerComboBox->itemText(i));
+		}
+
+		int condition = static_cast<int>(
+					m_m2kDigital->getTrigger()->getDigitalCondition(i));
+		triggerBox->setCurrentIndex((condition + 1) % 6);
+
+		connect(triggerBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
+			m_m2kDigital->getTrigger()->setDigitalCondition(i,
+					static_cast<libm2k::M2K_TRIGGER_CONDITION_DIGITAL>((index + 5) % 6));
+		});
 
 		// 1 for each channel
 		// m_plot.addGenericPlotCurve()
@@ -682,9 +706,9 @@ void LogicAnalyzer::connectSignalsAndSlots()
 		m_plot.setChannelName(text, m_selectedChannel);
 		m_plotCurves[m_selectedChannel]->setName(text);
 		if (m_selectedChannel < m_nbChannels) {
-			QWidget *widgetInLayout = ui->channelEnumeratorLayout->itemAtPosition(m_selectedChannel % 8,
-								    m_selectedChannel / 8)->widget();
-			auto channelBox = dynamic_cast<QCheckBox *>(widgetInLayout);
+			QLayout *widgetInLayout = ui->channelEnumeratorLayout->itemAtPosition(m_selectedChannel % 8,
+								    m_selectedChannel / 8)->layout();
+			auto channelBox = dynamic_cast<QCheckBox *>(widgetInLayout->itemAt(0)->widget());
 			channelBox->setText(text);
 		} else {
 			const int selectedDecoder = m_selectedChannel - m_nbChannels;
@@ -715,6 +739,11 @@ void LogicAnalyzer::connectSignalsAndSlots()
 	connect(ui->triggerComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
 		m_m2kDigital->getTrigger()->setDigitalCondition(m_selectedChannel,
 								static_cast<libm2k::M2K_TRIGGER_CONDITION_DIGITAL>((index + 5) % 6));
+		QLayout *widgetInLayout = ui->channelEnumeratorLayout->itemAtPosition(m_selectedChannel % 8,
+							    m_selectedChannel / 8)->layout();
+		auto triggerBox = dynamic_cast<QComboBox *>(widgetInLayout->itemAt(1)->widget());
+		QSignalBlocker triggerBlocker(triggerBox);
+		triggerBox->setCurrentIndex(index);
 	});
 
 	connect(ui->stackDecoderComboBox, &QComboBox::currentTextChanged, [=](const QString &text) {
