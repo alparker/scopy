@@ -157,7 +157,7 @@ Oscilloscope::Oscilloscope(struct iio_context *ctx, Filter *filt,
 			new cancel_dc_offset_block(1, true)));
 
 	/* Measurements Settings */
-	measure_settings_init();
+    measure_settings_init();
 
 	fft_size = 1024;
 	fft_plot_size = 1024;
@@ -3865,7 +3865,8 @@ void Oscilloscope::measureUpdateValues()
 
 void Oscilloscope::measure_settings_init()
 {
-	measure_settings = new MeasureSettings(&plot, this);
+    QList<Measure *>* measure_obj = plot.getMeasurements();
+    measure_settings = new MeasureSettings(measure_obj, this);
 
 	int measure_panel = ui->stackedWidget->insertWidget(-1, measure_settings);
 
@@ -4011,7 +4012,7 @@ void Oscilloscope::measure_panel_init()
 
 	measurePanel->hide();
 
-	connect(&plot, SIGNAL(measurementsAvailable()),
+    connect(&plot, SIGNAL(measurementsAvailable()),
 		SLOT(onMeasuremetsAvailable()));
 
 	// The second CursorReadouts belongs to the Measure panel. The first

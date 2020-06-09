@@ -500,8 +500,8 @@ CapturePlot::CapturePlot(QWidget *parent,
 		SLOT(onNewDataReceived()));
 
 	/* Add offset widgets for each new channel */
-	connect(this, SIGNAL(channelAdded(int)),
-		SLOT(onChannelAdded(int)));
+    connect(this, SIGNAL(channelAdded(int)),
+        SLOT(onChannelAdded(int)));
 
 	installEventFilter(this);
 	QwtScaleWidget *scaleWidget = axisWidget(QwtPlot::xBottom);
@@ -551,6 +551,11 @@ CapturePlot::~CapturePlot()
 	delete graticule;
 	delete leftGate;
 	delete rightGate;
+}
+
+QList<Measure *>* CapturePlot::getMeasurements()
+{
+    return &d_measureObjs;
 }
 
 HorizBar *CapturePlot::levelTriggerA()
