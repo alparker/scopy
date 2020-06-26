@@ -1184,6 +1184,8 @@ void NetworkAnalyzer::goertzel()
 		setFilterParameters();
 		// TODO: Use libm2k here
 
+		// Sleep before ADC capture
+		QThread::msleep(captureDelay->value());
 		std::vector<struct iio_channel *> adc_channels;
 
 		unsigned int nb_channels = iio_device_get_channels_count(adc);
@@ -1249,9 +1251,7 @@ void NetworkAnalyzer::goertzel()
 
 		QElapsedTimer t;
 		t.start();
-		// Sleep before ADC capture
-		QThread::msleep(captureDelay->value());
-
+		
 		capture_top_block->run();
 
 		float dcOffset = 0.0;
