@@ -56,6 +56,8 @@
 /* libm2k includes */
 #include <libm2k/contextbuilder.hpp>
 
+#define TIMER_TIMEOUT_MS 100
+
 static const int MAX_REF_CHANNELS = 4;
 
 using namespace adiscope;
@@ -127,7 +129,7 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 	sample_rate_divider(1),
 	marker_menu_opened(false),
 	bin_sizes({
-	256, 512, 1024, 2048, 4096, 8192, 16384, 32768
+	256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144
 	}), nb_ref_channels(0),
 	selected_ch_settings(-1)
 {
@@ -256,6 +258,9 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 	}, "Frequency Position", 0.0, 5e7, true, false, this);
 	ui->markerFreqPosLayout->addWidget(marker_freq_pos);
 	marker_freq_pos->setFineModeAvailable(false);
+
+	sample_timer = new QTimer();
+	connect(sample_timer, SIGNAL(timeout()), this, SLOT(refreshCurrentSampleLabel()));
 
 	startStopRange = new StartStopRangeWidget();
 	connect(startStopRange, &StartStopRangeWidget::rangeChanged, [=](double start, double stop){
@@ -995,9 +1000,12 @@ void SpectrumAnalyzer::runStopToggled(bool checked)
 
 		fft_plot->presetSampleRate(sample_rate);
 		fft_sink->set_samp_rate(sample_rate);
+		m_time_start = std::chrono::system_clock::now();
 		start_blockchain_flow();
+		sample_timer->start(TIMER_TIMEOUT_MS);
 	} else {
 		stop_blockchain_flow();
+		sample_timer->stop();
 	}
 
 	if (!checked) {
@@ -1514,6 +1522,7 @@ void SpectrumAnalyzer::setSampleRate(double sr)
 		return;
 	}
 
+	sample_rate = new_sr;
 	if (isIioManagerStarted()) {
 		stop_blockchain_flow();
 
@@ -1537,10 +1546,12 @@ void SpectrumAnalyzer::setSampleRate(double sr)
 		fft_plot->resetAverageHistory();
 		fft_sink->set_samp_rate(new_sr);
 
-		start_blockchain_flow();
-	}
+		sample_timer->stop();
+		m_time_start = std::chrono::system_clock::now();
 
-	sample_rate = new_sr;
+		start_blockchain_flow();
+		sample_timer->start(TIMER_TIMEOUT_MS);
+	}
 }
 
 void SpectrumAnalyzer::setFftSize(uint size)
@@ -1580,6 +1591,44 @@ void SpectrumAnalyzer::setFftSize(uint size)
 	if (started) {
 		iio->unlock();
 	}
+
+	sample_timer->stop();
+	setCurrentSampleLabel(0.0);
+	m_time_start = std::chrono::system_clock::now();
+	sample_timer->start(TIMER_TIMEOUT_MS);
+}
+
+
+void SpectrumAnalyzer::refreshCurrentSampleLabel()
+{
+	if (!isIioManagerStarted()) {
+		sample_timer->stop();
+		return;
+	}
+
+	double time_acquisition = fft_size / sample_rate;
+
+	auto time_now = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_done = time_now - m_time_start;
+
+	if (time_acquisition < elapsed_done.count()) {
+		setCurrentSampleLabel(100);
+		return;
+	}
+	double time_percentage = elapsed_done.count() / time_acquisition * 100;
+	if (time_percentage > 100) {
+		time_percentage = 100;
+		sample_timer->stop();
+	}
+	setCurrentSampleLabel(time_percentage);
+}
+void SpectrumAnalyzer::setCurrentSampleLabel(double percentage)
+{
+	QString percentage_str = QString::number(percentage, 'f', 2);
+	QString txt = QString("Sample: %1 % / %2 ").arg(percentage_str).arg(fft_size);
+	ui->lbl_crtSampleNb->setText(txt);
+}
+
 }
 
 void SpectrumAnalyzer::on_btnDnAmplPeak_clicked()
@@ -1794,6 +1843,10 @@ void SpectrumAnalyzer::singleCaptureDone()
 {
 	if (ui->runSingleWidget->singleButtonChecked()) {
 		Q_EMIT started(false);
+	} else {
+		sample_timer->stop();
+		m_time_start = std::chrono::system_clock::now();
+		sample_timer->start(TIMER_TIMEOUT_MS);
 	}
 }
 
