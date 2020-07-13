@@ -1322,6 +1322,9 @@ void adiscope::ToolLauncher::enableAdcBasedTools()
 		connect(oscilloscope, &Oscilloscope::showTool, [=]() {
 			menu->getToolMenuItemFor(TOOL_OSCILLOSCOPE)->getToolBtn()->click();
 		});
+		if (logic_analyzer) {
+			oscilloscope->setLogicAnalyzer(logic_analyzer);
+		}
 	}
 
 	if (filter->compatible(TOOL_DMM)) {
@@ -1342,12 +1345,12 @@ void adiscope::ToolLauncher::enableAdcBasedTools()
 				 &ToolLauncher::addDebugWindow);
 	}
 
-	if (filter->compatible(TOOL_CALIBRATION)) {
-		manual_calibration = new ManualCalibration(ctx, filter,menu->getToolMenuItemFor(TOOL_CALIBRATION),
-				&js_engine, this, calib);
-		adc_users_group.addButton(menu->getToolMenuItemFor(TOOL_CALIBRATION)->getToolStopBtn());
-		toolList.push_back(manual_calibration);
-	}
+//	if (filter->compatible(TOOL_CALIBRATION)) {
+//		manual_calibration = new ManualCalibration(ctx, filter,menu->getToolMenuItemFor(TOOL_CALIBRATION),
+//				&js_engine, this, calib);
+//		adc_users_group.addButton(menu->getToolMenuItemFor(TOOL_CALIBRATION)->getToolStopBtn());
+//		toolList.push_back(manual_calibration);
+//	}
 
 	if (filter->compatible(TOOL_SPECTRUM_ANALYZER)) {
 		spectrum_analyzer = new SpectrumAnalyzer(ctx, filter, menu->getToolMenuItemFor(TOOL_SPECTRUM_ANALYZER),&js_engine, this);

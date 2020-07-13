@@ -29,6 +29,8 @@
 #include <gnuradio/blocks/float_to_complex.h>
 #include <frequency_compensation_filter.h>
 
+#include <m2k/analog_in_source.h>
+
 #include <mutex>
 
 /* 1k samples by default */
@@ -114,7 +116,7 @@ namespace adiscope {
 
 		std::vector<std::pair<port_id, unsigned long> > copy_blocks;
 
-		gr::iio::device_source::sptr iio_block;
+		gr::m2k::analog_in_source::sptr iio_block;
 		unsigned int nb_channels;
 
 		struct connection {

@@ -96,6 +96,7 @@ Oscilloscope::Oscilloscope(struct iio_context *ctx, Filter *filt,
 	Tool(ctx, toolMenuItem, new Oscilloscope_API(this), "Oscilloscope", parent),
 	m_m2k_context(m2kOpen(ctx, "")),
 	m_m2k_analogin(m_m2k_context->getAnalogIn()),
+	m_m2k_digital(m_m2k_context->getDigital()),
 	nb_channels(m_m2k_analogin->getNbChannels()),
 	active_sample_rate(getSampleRate()),
 	nb_math_channels(0),
@@ -139,7 +140,9 @@ Oscilloscope::Oscilloscope(struct iio_context *ctx, Filter *filt,
 	wheelEventGuard(nullptr),
 	miniHistogram(true),
 	gatingEnabled(false),
-	m_filtering_enabled(true)
+	m_filtering_enabled(true),
+	m_logicAnalyzer(nullptr),
+	m_mixedSignalViewEnabled(false)
 {
 	ui->setupUi(this);
 	int triggers_panel = ui->stackedWidget->insertWidget(-1, &trigger_settings);
@@ -932,6 +935,12 @@ void Oscilloscope::setNativeDialogs(bool nativeDialogs)
 	plot.setUseNativeDialog(nativeDialogs);
 }
 
+void Oscilloscope::setLogicAnalyzer(logic::LogicAnalyzer *la)
+{
+	qDebug() << "Logic Analyzer: " << la;
+	m_logicAnalyzer = la;
+}
+
 void Oscilloscope::add_ref_waveform(QString name, QVector<double> xData, QVector<double> yData, unsigned int sampleRate)
 {
 	plot.cancelZoom();
@@ -1260,6 +1269,15 @@ void Oscilloscope::setFilteringEnabled(bool set)
 	setSampleRate(active_sample_rate);
 }
 
+void Oscilloscope::enableMixedSignalView()
+{
+	m_mixedSignalViewEnabled = true;
+
+	std::vector<QWidget*> logicWidgets = m_logicAnalyzer->enableMixedSignalView(&plot,
+										    nb_channels + nb_math_channels + nb_ref_channels);
+
+	ui->logicSettingsLayout->addWidget(logicWidgets[0]);
+}
 
 void Oscilloscope::toggleMiniHistogramPlotVisible(bool enabled)
 {
@@ -1911,20 +1929,81 @@ void Oscilloscope::create_add_channel_panel()
 
 	tabWidget->addTab(ref, tr("Reference"));
 
+	tabWidget->addTab(new QWidget(), tr("Logic"));
+
 	connect(btnOpenFile, &QPushButton::clicked, this, &Oscilloscope::import);
 
 	connect(tabWidget, &QTabWidget::currentChanged, [=](int index) {
+		btn->setVisible(true);
 		if (index == 0) {
 			btn->setText(tr("Add channel"));
 			btn->setEnabled(lastFunctionValid);
 		} else if (index == 1) {
 			btn->setText(tr("Import selected channels"));
 			btn->setEnabled(importSettings->isEnabled());
+		} else if (index == 2) {
+//			btn->setVisible(false);
+			btn->setText(tr("Enable Mixed Signal View"));
+			btn->setEnabled(true);
 		}
 	});
 
 	connect(btn, &QPushButton::clicked,
 	[=]() {
+
+		if (tabWidget->currentIndex() == 2) {
+
+			qDebug() << "Enable mixed signal view!";
+
+			ChannelWidget *logicAnalyzerChannelWidget = new ChannelWidget(-1, true, false,
+										      QColor(Qt::yellow), this);
+			logicAnalyzerChannelWidget->setFullName("Logic Analyzer");
+			logicAnalyzerChannelWidget->setShortName("Logic");
+			ui->channelsList->addWidget(logicAnalyzerChannelWidget);
+
+			logicAnalyzerChannelWidget->nameButton()->setText(logicAnalyzerChannelWidget->shortName());
+
+			channels_group->addButton(logicAnalyzerChannelWidget->nameButton());
+			ui->settings_group->addButton(logicAnalyzerChannelWidget->menuButton());
+			logicAnalyzerChannelWidget->nameButton()->setChecked(true);
+
+			const int logicId = ui->stackedWidget->indexOf(ui->logicSettings);
+			logicAnalyzerChannelWidget->menuButton()->setProperty("id", QVariant(-logicId));
+
+			connect(logicAnalyzerChannelWidget->menuButton(), &QAbstractButton::toggled, [=](bool toggled){
+				triggerRightMenuToggle(
+					static_cast<CustomPushButton *>(logicAnalyzerChannelWidget->menuButton()), toggled);
+			});
+
+			const int logicTab = tabWidget->currentIndex();
+
+			tabWidget->setTabEnabled(logicTab, false);
+
+			connect(logicAnalyzerChannelWidget->deleteButton(), &QAbstractButton::clicked, [=](){
+
+				if (logicAnalyzerChannelWidget->menuButton()->isChecked()) {
+					menuButtonActions.removeAll(QPair<CustomPushButton*, bool>
+								    (static_cast<CustomPushButton*>(logicAnalyzerChannelWidget->menuButton()), true));
+					toggleRightMenu(static_cast<CustomPushButton*>(logicAnalyzerChannelWidget->menuButton()), false);
+				}
+
+				menuOrder.removeOne(static_cast<CustomPushButton*>(logicAnalyzerChannelWidget->menuButton()));
+
+				ui->channelsList->removeWidget(logicAnalyzerChannelWidget);
+				logicAnalyzerChannelWidget->deleteLater();
+
+				tabWidget->setTabEnabled(logicTab, true);
+
+				m_logicAnalyzer->disableMixedSignalView();
+			});
+
+			logicAnalyzerChannelWidget->menuButton()->setChecked(true);
+
+			enableMixedSignalView();
+
+			return;
+		}
+
 		if (tabWidget->currentIndex() != 0) {
 			QMap<int, bool> import_map = importSettings->getExportConfig();
 
@@ -2413,6 +2492,27 @@ void Oscilloscope::toggle_blockchain_flow(bool en)
 			iio->stop(autoset_id[0]);			
 		}
 	}
+
+//	if (en && m_logicAnalyzer) {
+//		m_m2k_digital->setSampleRateIn(active_sample_rate);
+//		// active_sample_count
+//		m_m2k_digital->getTrigger()->setDigitalStreamingFlag(false);
+//		m_m2k_digital->getTrigger()->setDigitalDelay(-active_time_pos * active_sample_rate);
+
+//		for (int i = 0; i < 16; ++i) {
+//			QwtPlotCurve *curve = plot.getDigitalPlotCurve(i);
+//			GenericLogicPlotCurve *logic_curve = dynamic_cast<GenericLogicPlotCurve *>(curve);
+//			logic_curve->reset();
+
+//			logic_curve->setSampleRate(active_sample_rate);
+//			logic_curve->setBufferSize(active_sample_count);
+//			qDebug() << "time pos: " << active_time_pos << "   active sample rate: " << active_sample_rate;
+//			logic_curve->setTimeTriggerOffset(-(active_sample_count / 2.0) + (active_time_pos * active_sample_rate));
+//		}
+
+//		const uint16_t * const temp = m_m2k_digital->getSamplesP(active_sample_count);
+//		m_logicAnalyzer->setData(temp, active_sample_count);
+//	}
 }
 
 void Oscilloscope::run()

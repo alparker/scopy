@@ -36,6 +36,7 @@
 #include "buffer_previewer.hpp"
 #include "spinbox_a.hpp"
 #include "scroll_filter.hpp"
+#include "saverestoretoolsettings.h"
 
 #include "genericlogicplotcurve.h"
 
@@ -72,6 +73,25 @@ public:
 			 ToolLauncher *parent, bool offline_mode_ = 0);
 	~LogicAnalyzer();
 
+public: // Mixed Signal View Interface
+
+	// enable mixed signal view
+	// return a list with all the controls available for the Logic Analyzer
+	std::vector<QWidget *> enableMixedSignalView(CapturePlot *osc, int oscAnalogChannels);
+
+	// disable mixed signal view
+	void disableMixedSignalView();
+
+	// add the curve to the used plot (logic or osc)
+	void addCurveToPlot(QwtPlotCurve *curve);
+
+	// get the current plot in use (logic or osc)
+	QwtPlot *getCurrentPlot();
+
+	// connect signals and slots for the plot (logic or osc)
+	void connectSignalsAndSlotsForPlot(CapturePlot *plot);
+
+	void setData(const uint16_t * const data, int size);
 Q_SIGNALS:
 	void showTool();
 
@@ -168,6 +188,11 @@ private:
 	QTimer *m_timer;
 	double m_timerTimeout;
 	QVector<M2K_TRIGGER_CONDITION_DIGITAL> m_triggerState;
+
+	/* mixed signal view */
+	std::unique_ptr<SaveRestoreToolSettings> m_saveRestoreSettings;
+	CapturePlot *m_oscPlot;
+	int m_oscAnalogChannels;
 
 };
 } // namespace logic

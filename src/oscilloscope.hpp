@@ -65,9 +65,11 @@
 #include "cancel_dc_offset_block.h"
 #include "frequency_compensation_filter.h"
 #include "oscilloscope_api.hpp"
+#include "logicanalyzer/logic_analyzer.h"
 
 /* libm2k includes */
 #include <libm2k/analog/m2kanalogin.hpp>
+#include <libm2k/digital/m2kdigital.hpp>
 #include <libm2k/m2k.hpp>
 
 /*Generated UI */
@@ -123,6 +125,9 @@ namespace adiscope {
 		void add_ref_waveform(QString name, QVector<double> xData, QVector<double> yData, unsigned int sampleRate);
 		void remove_ref_waveform(QString name);
 		void setNativeDialogs(bool nativeDialogs) override;
+
+		void setLogicAnalyzer(logic::LogicAnalyzer *la);
+
 	Q_SIGNALS:
 		void triggerALevelChanged(double);
 		void triggerBLevelChanged(double);
@@ -229,6 +234,9 @@ namespace adiscope {
 		void toggleCursorsMode(bool toggled);
 		void toolDetached(bool);
 		void setFilteringEnabled(bool set);
+
+		void enableMixedSignalView();
+
 	public Q_SLOTS:
 		void requestAutoset();
 		void enableLabels(bool);
@@ -239,6 +247,7 @@ namespace adiscope {
 	private:
 		libm2k::context::M2k* m_m2k_context;
 		libm2k::analog::M2kAnalogIn* m_m2k_analogin;
+		libm2k::digital::M2kDigital* m_m2k_digital;
 		bool m_filtering_enabled;
 
 		unsigned int nb_channels, nb_math_channels;
@@ -459,6 +468,9 @@ namespace adiscope {
 		void updateXyPlotScales();
 		void setSampleRate(double sample_rate);
 		double getSampleRate();
+
+		logic::LogicAnalyzer *m_logicAnalyzer;
+		bool m_mixedSignalViewEnabled;
 	};
 }
 #endif /* M2K_OSCILLOSCOPE_H */

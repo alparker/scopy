@@ -1498,6 +1498,7 @@ void CapturePlot::addToGroup(int currentGroup, int toAdd)
 void CapturePlot::onDigitalChannelAdded(int chnIdx)
 {
 	qDebug() << "Digital Channel Added!";
+	setLeftVertAxesCount(d_ydata.size() + d_ref_ydata.size() + chnIdx + 1);
 
 	QColor chnColor;
 	const int h = (55 * chnIdx) % 360;
@@ -1513,7 +1514,7 @@ void CapturePlot::onDigitalChannelAdded(int chnIdx)
 	d_symbolCtrl->attachSymbol(chOffsetBar);
 	chOffsetBar->setCanLeavePlot(true);
 	chOffsetBar->setVisible(false);
-	chOffsetBar->setMobileAxis(QwtAxisId(QwtPlot::yLeft, 0));
+	chOffsetBar->setMobileAxis(QwtAxisId(QwtPlot::yLeft, d_ydata.size() + d_ref_ydata.size() + chnIdx));
 	d_offsetBars.push_back(chOffsetBar);
 
 	RoundedHandleV *chOffsetHdl = new RoundedHandleV(
