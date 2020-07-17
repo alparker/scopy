@@ -32,8 +32,10 @@ if [ -e /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/Python ] 
 	pythonidrpath="$(otool -D /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/Python | head -2 |  tail -1)"
 elif [ -e /usr/local/opt/python/Frameworks/Python.framework/Versions/3.6/Python ] ; then
 	pythonidrpath="$(otool -D /usr/local/opt/python/Frameworks/Python.framework/Versions/3.6/Python | head -2 |  tail -1)"
+elif [ -e /usr/local/opt/python/Frameworks/Python.framework/Versions/3.8/Python ] ; then
+	pythonidrpath="$(otool -D /usr/local/opt/python/Frameworks/Python.framework/Versions/3.8/Python | head -2 |  tail -1)"
 else
-	echo "No Python 3.7 or 3.6 paths found"
+	echo "No Python 3.8, 3.7 or 3.6 paths found"
 	exit 1
 fi
 libusbpath="$(otool -L ./Scopy.app/Contents/Frameworks/iio.framework/iio | grep libusb | cut -d " " -f 1)"
