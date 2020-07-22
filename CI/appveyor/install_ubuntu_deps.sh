@@ -13,8 +13,17 @@ QWTPOLAR_BRANCH=master # not used
 LIBSIGROK_BRANCH=master
 LIBSIGROKDECODE_BRANCH=master #not used
 
-QMAKE=/home/adi/Qt/5.15.0/gcc_64/bin/qmake
 set -e
+if [ $# -eq 0 ]; then
+	echo "Using default qmake"
+	QMAKE=qmake
+	$QMAKE --version
+else
+	QMAKE=$1/gcc_64/bin/qmake
+	$QMAKE --version
+
+fi
+
 cd ~
 WORKDIR=${PWD}
 
