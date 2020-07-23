@@ -518,9 +518,6 @@ border-color: green;
        <height>64</height>
       </size>
      </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton:enabled:!pressed { background-color: grey; }</string>
-     </property>
      <property name="text">
       <string>e</string>
      </property>
@@ -900,9 +897,6 @@ QPushButton:hover
        <width>16777215</width>
        <height>64</height>
       </size>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton:enabled:!pressed { background-color: grey; }</string>
      </property>
      <property name="text">
       <string>π</string>
